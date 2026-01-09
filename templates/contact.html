@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Contact & Appointment - Pulse Hospital{% endblock %}
+
+{% block content %}
+    <section id="appointment" class="appointment">
+        <div class="container">
+            <h2 class="section-title">Book an Appointment</h2>
+            <p class="section-subtitle">Schedule your visit with our specialists</p>
+            
+            <form method="post" class="appointment-form">
+                {% csrf_token %} 
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger" style="color: #e74c3c; margin-bottom: 20px; border: 1px solid #e74c3c; padding: 10px; border-radius: 5px; background: #fbecec;">
+                        Please correct the errors below.
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        {{ form.patient_name.label_tag }}
+                        {{ form.patient_name }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.email.label_tag }}
+                        {{ form.email }}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        {{ form.phone.label_tag }}
+                        {{ form.phone }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.department.label_tag }}
+                        {{ form.department }}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        {{ form.doctor.label_tag }}
+                        {{ form.doctor }}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.appointment_date.label_tag }}
+                        {{ form.appointment_date }}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        {{ form.appointment_time.label_tag }}
+                        {{ form.appointment_time }}
+                    </div>
+                    
+                    <div class="form-group"></div> 
+                </div>
+                
+                <div class="form-group">
+                    {{ form.reason.label_tag }}
+                    {{ form.reason }}
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="terms" name="terms" required>
+                    <label for="terms">I agree to the terms and conditions *</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-submit">Book Appointment</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Contact Us</h2>
+            <p class="section-subtitle">Get in touch with us</p>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="info-card">
+                        <div class="info-icon">📞</div>
+                        <h3>Phone</h3>
+                        <p><a href="tel:9765211026">9765211026</a></p>
+                        <p class="info-subtitle">24/7 Emergency Available</p>
+                    </div>
+                   <div class="info-card">
+                        <div class="info-icon">✉️</div>
+                        <h3>Email</h3>
+                        <p><a href="mailto:pulsemh21@gmail.com">pulsemh21@gmail.com</a></p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">📍</div>
+                        <h3>Address</h3>
+                        <p>Takiya Ward, Main Road,<br>Teachers Colony, Ashrafi Nagar,<br>Bhandara, Maharashtra 441904</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">🕐</div>
+                        <h3>Working Hours</h3>
+                        <p>24/7 Emergency Services</p>
+                        <p class="info-subtitle">OPD: 9:00 AM - 6:00 PM</p>
+                    </div>
+                </div>
+                
+                <div class="contact-form-container">
+                    <form id="contactForm" class="contact-form" method="post">
+                        {% csrf_token %} <div class="form-group">
+                            <label for="contactName">Name *</label>
+                            <input type="text" id="contactName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email *</label>
+                            <input type="email" id="contactEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactPhone">Phone</label>
+                            <input type="tel" id="contactPhone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message *</label>
+                            <textarea id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                    </form>
+                </div>
+            </div>
+            <div class="map-container">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3720.7415495061146!2d79.641341774718!3d21.16268128316647!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a2b39bb3b8a9a81%3A0x68b58ab90d29a745!2sPulse%20Multispeciality%20Hospital%20Bhandara%20%7C%20Dr%20Rahul%20Bhiwgade%20-MBBS%20MD%20Physician%20%7C%20Dr%20Anagha%20Kharwade%20MBBS%20MD!5e0!3m2!1sen!2sin!4v1763899392723!5m2!1sen!2sin" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
+    </section>
+{% endblock content %}

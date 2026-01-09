@@ -1,0 +1,273 @@
+{% extends 'dashboard_base.html' %}
+
+{% block sidebar_bg %}bg-[#064e3b]{% endblock %} 
+{% block accent_text %}text-emerald-400{% endblock %}
+{% block logout_box_bg %}bg-emerald-900/40{% endblock %}
+{% block role_badge_bg %}bg-emerald-50 text-emerald-600 border-emerald-100{% endblock %}
+{% block profile_icon_bg %}bg-emerald-600 shadow-emerald-600/20{% endblock %}
+
+{% block role_badge_content %}
+    <i class="fas fa-prescription-bottle-alt mr-1.5"></i> Pharmacist
+{% endblock %}
+
+{% block sidebar_links %}
+<a href="{% url 'pulsehospital:pharmacy_dashboard' %}" 
+   class="flex items-center py-3 px-6 bg-emerald-800 text-white border-l-4 border-emerald-400 transition-colors rounded-r-lg mr-2">
+    <i class="fas fa-pills mr-3"></i> Medicine Inventory
+</a>
+
+{% comment %} <a href="{% url 'pulsehospital:dashboard_redirect' %}" 
+   class="flex items-center py-3 px-6 text-emerald-100/70 hover:bg-emerald-800 hover:text-white transition-colors">
+    <i class="fas fa-home mr-3"></i> Main Dashboard
+</a> {% endcomment %}
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="max-w-7xl mx-auto space-y-4 pb-24 px-2 sm:px-6 bg-slate-50 min-h-screen">
+    
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-lg shadow-sm border-b-4 border-emerald-500 gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="h-10 w-10 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100">
+                <i class="fas fa-prescription text-emerald-600 text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-800 uppercase tracking-tighter italic">
+                    <span class="text-emerald-600">Pulse</span> Pharmacy <span class="text-slate-400 text-[10px] font-bold not-italic ml-2 tracking-[0.2em] uppercase">Inventory Desk</span>
+                </h1>
+                <p class="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1 italic">Stock Control & Chemical Management</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 w-full md:w-auto">
+            <button type="button" onclick="confirmBulkDelete()" id="bulkDeleteBtn" 
+                class="hidden bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">
+                <i class="fas fa-trash-alt mr-2"></i> Delete Items
+            </button>
+            <div class="bg-emerald-600 px-5 py-1.5 rounded-lg flex flex-col items-center min-w-[100px] shadow-sm">
+                <p class="text-[8px] font-black text-emerald-100 uppercase tracking-widest">Total Stock</p>
+                <p class="text-lg font-black text-white">{{ medicines.count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        
+        <div class="lg:col-span-1 space-y-4">
+            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
+                <h3 class="font-black text-slate-700 mb-4 flex items-center text-[10px] uppercase tracking-widest border-b pb-2">
+                    <i class="fas fa-plus-circle mr-2 text-emerald-500"></i> New Medicine Entry
+                </h3>
+                <form method="POST" action="{% url 'pulsehospital:pharmacy_dashboard' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Brand Name</label>
+                        <input type="text" name="name" required placeholder="Ex: PAN-40" 
+                               class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-emerald-500 text-slate-700 text-xs font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Composition</label>
+                        <textarea name="composition" required placeholder="Ex: Pantoprazole 40mg" rows="3"
+                                  class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-emerald-500 text-slate-700 text-xs font-bold outline-none"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition active:scale-95 shadow-md">
+                        Add to Inventory
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-100 shadow-sm">
+                <h3 class="font-black text-emerald-700 mb-4 flex items-center text-[10px] uppercase tracking-widest border-b border-emerald-100 pb-2">
+                    <i class="fas fa-file-csv mr-2"></i> CSV Bulk Import
+                </h3>
+                <form method="POST" enctype="multipart/form-data" action="{% url 'pulsehospital:upload_medicine_csv' %}" class="space-y-3">
+                    {% csrf_token %}
+                    <div class="relative group border border-dashed border-emerald-300 rounded-lg p-3 text-center bg-white hover:bg-emerald-100/50 transition cursor-pointer">
+                        <input type="file" name="csv_file" accept=".csv" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-emerald-500 text-lg mb-1"></i>
+                        <p class="text-[8px] text-emerald-600 font-black uppercase">Click to Browse</p>
+                    </div>
+                    <button type="submit" class="w-full bg-slate-800 text-white py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition">
+                        Import Data
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-3 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+            <div class="p-4 border-b bg-slate-50/80 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <h3 class="font-black text-slate-500 text-[10px] uppercase tracking-widest italic">Inventory Stock Ledger</h3>
+                <div class="relative w-full sm:w-72">
+                    <input type="text" id="medSearch" onkeyup="searchMedicine()" placeholder="Quick search brand or salt..." 
+                           class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:ring-1 focus:ring-emerald-500 outline-none shadow-sm placeholder:text-slate-300">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-slate-300 text-xs"></i>
+                </div>
+            </div>
+
+            <form id="bulkDeleteForm" method="POST" action="{% url 'pulsehospital:bulk_delete_medicine' %}">
+                {% csrf_token %}
+                <div class="overflow-x-auto">
+                    <div class="max-h-[550px] overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse" id="medTable">
+                            <thead class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b bg-white sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-6 py-4 w-12">
+                                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                    </th>
+                                    <th class="px-6 py-4">Medicine & Composition Content</th>
+                                    <th class="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for med in medicines %}
+                                <tr class="hover:bg-emerald-50/50 transition-all med-row group">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox" name="medicine_ids" value="{{ med.id }}" class="med-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" onclick="updateBulkBtn()">
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <p class="font-black text-slate-800 med-name text-xs uppercase tracking-tight group-hover:text-emerald-700 transition-colors">{{ med.name }}</p>
+                                            <div class="flex items-center mt-1">
+                                                <span class="text-[8px] font-black text-emerald-400 uppercase mr-2 tracking-tighter">Composition:</span>
+                                                <p class="text-[10px] text-slate-500 font-bold med-comp leading-tight italic">{{ med.composition }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex justify-end items-center space-x-1.5">
+                                            <button type="button" onclick="openEditModal('{{ med.id }}', '{{ med.name|escapejs }}', '{{ med.composition|escapejs }}')" 
+                                                    class="h-8 w-8 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all border border-slate-200">
+                                                <i class="fas fa-edit text-[10px]"></i>
+                                            </button>
+                                            <button type="button" onclick="confirmDelete('{{ med.id }}')" 
+                                                    class="h-8 w-8 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all border border-slate-200">
+                                                <i class="fas fa-trash-alt text-[10px]"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="px-6 py-16 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <i class="fas fa-box-open text-3xl text-slate-200 mb-3"></i>
+                                            <p class="text-slate-400 font-black uppercase tracking-widest text-[9px]">Inventory Empty</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl border-t-8 border-emerald-600">
+        <div class="flex items-center mb-6">
+            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mr-3 border border-emerald-100">
+                <i class="fas fa-capsules"></i>
+            </div>
+            <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest italic">Edit SKU Content</h2>
+        </div>
+        <form id="editForm" method="POST" action="">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Medicine Name</label>
+                    <input type="text" name="name" id="editName" required 
+                           class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 text-xs font-bold">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1"> Composition Content</label>
+                    <textarea name="composition" id="editComp" required rows="3" 
+                              class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 text-xs font-bold"></textarea>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-slate-100 rounded-lg font-black text-slate-500 text-[10px] uppercase tracking-widest hover:bg-slate-200 transition">Discard</button>
+                    <button type="submit" class="flex-1 py-3 bg-emerald-600 text-white rounded-lg font-black shadow-lg text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition">Update Stock</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #10b981; }
+</style>
+
+<script>
+    // JS Logic remains same
+    function searchMedicine() {
+        let input = document.getElementById("medSearch").value.toLowerCase();
+        let rows = document.querySelectorAll(".med-row");
+        rows.forEach(row => {
+            let name = row.querySelector(".med-name").innerText.toLowerCase();
+            let comp = row.querySelector(".med-comp").innerText.toLowerCase();
+            row.style.display = (name.includes(input) || comp.includes(input)) ? "" : "none";
+        });
+    }
+
+    function openEditModal(id, name, comp) {
+        document.getElementById('editName').value = name;
+        document.getElementById('editComp').value = comp;
+        document.getElementById('editForm').action = `/pharmacy/edit/${id}/`;
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+    function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+    function toggleSelectAll() {
+        let selectAll = document.getElementById('selectAll');
+        let checkboxes = document.querySelectorAll('.med-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateBulkBtn();
+    }
+    function updateBulkBtn() {
+        let checkedCount = document.querySelectorAll('.med-checkbox:checked').length;
+        document.getElementById('bulkDeleteBtn').classList.toggle('hidden', checkedCount === 0);
+    }
+
+    function confirmDelete(id) {
+        Swal.fire({ 
+            title: '<span style="font-family:sans-serif; font-size:16px; font-weight:900; color:#1e293b;">DELETE MEDICINE?</span>', 
+            text: "This item will be removed from inventory.", 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'YES, REMOVE',
+            cancelButtonText: 'CANCEL'
+        }).then((result) => { if (result.isConfirmed) window.location.href = `/pharmacy/delete/${id}/`; });
+    }
+
+    function confirmBulkDelete() {
+        Swal.fire({ 
+            title: '<span style="font-family:sans-serif; font-size:16px; font-weight:900; color:#1e293b;">BULK DELETE?</span>', 
+            text: "Are you sure you want to delete all selected items?", 
+            icon: 'error', 
+            showCancelButton: true, 
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'CONFIRM DELETE' 
+        }).then((result) => { if (result.isConfirmed) document.getElementById('bulkDeleteForm').submit(); });
+    }
+
+    {% if messages %}
+        {% for message in messages %}
+            Swal.fire({ 
+                title: 'COMPLETED!', 
+                text: '{{ message }}', 
+                icon: 'success', 
+                confirmButtonColor: '#10b981',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock %}

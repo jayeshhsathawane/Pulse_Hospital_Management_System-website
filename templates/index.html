@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home - Pulse Multispeciality Hospital Bhandara{% endblock %}
+
+{% block content %}
+    <section id="home" class="hero">
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <h1 class="hero-title">Your Health, Our Priority</h1>
+            <p class="hero-subtitle">Comprehensive Healthcare Services in Bhandara</p>
+            <p class="hero-description">Expert Medical Care with Advanced Facilities</p>
+            <div class="hero-buttons">
+                <a href="{% url 'pulsehospital:contact' %}#appointment" class="btn btn-primary">Book Appointment</a>
+                <a href="tel:9765211026" class="btn btn-secondary">Emergency: 9765211026</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about">
+        <div class="container">
+            <div class="contact-grid" style="align-items: center;">
+                <div class="about-image-container" style="position: relative;">
+                    <div style="
+                        border-radius: 20px; 
+                        overflow: hidden; 
+                        box-shadow: var(--shadow-hover); 
+                        border: 5px solid var(--white);
+                        position: relative;
+                        z-index: 2;">
+                        <img src="{% static 'public/gallery/img1.jpg' %}" alt="About Pulse Hospital" style="width: 100%; height: 100%; display: block;">
+                    </div>
+                    <div style="
+                        position: absolute; 
+                        top: 20px; 
+                        left: -20px; 
+                        width: 100%; 
+                        height: 100%; 
+                        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); 
+                        border-radius: 20px; 
+                        z-index: 1;
+                        opacity: 0.3;">
+                    </div>
+                </div>
+
+                <div class="about-content">
+                    <h2 class="section-title" style="text-align: left; margin-bottom: 20px;">About Pulse Hospital</h2>
+                    <h4 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.2rem;">Dedicated to Healing, Committed to Care</h4>
+                    
+                    <p style="color: var(--text-dark); margin-bottom: 15px; line-height: 1.8; text-align: justify;">
+                        Welcome to <strong>Pulse Multispeciality Hospital (Bhiwgade Critical Care & Maternity Home)</strong>. Located in the heart of Bhandara, we are a premier healthcare facility dedicated to providing comprehensive medical care with a human touch.
+                    </p>
+
+                    <p style="color: var(--text-light); margin-bottom: 25px; text-align: justify;">
+                        Founded with a vision to make advanced healthcare accessible, we combine state-of-the-art technology with experienced medical professionals. Whether it's critical care, maternity services, or general medicine, your health is our utmost priority.
+                    </p>
+
+                   <ul class="services-list" style="margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; color: red; font-weight: bold;">
+                            <li>24/7 Emergency Services</li>
+                            <li>IPD Services Available</li>
+                            <li>Expert Medical Team</li>
+                            <li>In-House Pathology</li>
+                            <li>In-House Pharmacy</li>
+                            <li>Hygienic Environment</li>
+                    </ul>
+                    <div class="hero-buttons" style="justify-content: flex-start;">
+                        <a href="{% url 'pulsehospital:doctors' %}" class="btn btn-primary">Meet Our Doctors</a>
+                        <a href="{% url 'pulsehospital:contact' %}#contact" class="btn btn-secondary"
+                            style="color: var(--primary-color); border-color: var(--primary-color);">Contact Us</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="facility-highlight" style="margin-top: 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; background: var(--white); border-top: 4px solid var(--primary-color); color: var(--text-dark);">
+                <div>
+                    <h3 style="color: var(--primary-color); font-size: 2.5rem; margin-bottom: 0;">5+</h3>
+                    <p>Years of Experience</p>
+                </div>
+               <div>
+                <h3 style="color: var(--primary-color); font-size: 2.5rem; margin-bottom: 0;">
+                     {{ patient_count }}+
+                </h3>
+                    <p>Happy Patients</p>
+                </div>
+                
+                <div>
+                    <h3 style="color: var(--primary-color); font-size: 2.5rem; margin-bottom: 0;">24/7</h3>
+                    <p>Emergency Support</p>
+                </div>
+                <div>
+                    <h3 style="color: var(--primary-color); font-size: 2.5rem; margin-bottom: 0;">5+</h3>
+                    <p>Medical Experts</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+ <section class="why-choose-us" style="padding: 80px 0; background: #f8fafc;">
+    <div class="container">
+        <h2 class="section-title" style="margin-bottom: 10px; text-align: center;">Why Choose Pulse Hospital?</h2>
+        <p class="section-subtitle" style="margin-bottom: 50px; color: var(--text-light); text-align: center;">Providing World-Class Healthcare Services in Your City</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px;">
+            
+            <div style="background: white; padding: 30px; border-radius: 15px; border-bottom: 4px solid #2ecc71; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; transition: transform 0.3s;">
+                <div style="width: 70px; height: 70px; background: #f0fff4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 2px solid #2ecc71;">
+                    <i class="fas fa-user-md" style="font-size: 28px; color: #2ecc71;"></i>
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: #1e293b; text-transform: uppercase;">Expert Doctors</h3>
+                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.6;">Highly experienced specialists available for comprehensive medical consultations.</p>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 15px; border-bottom: 4px solid #3498db; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
+                <div style="width: 70px; height: 70px; background: #ebf8ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 2px solid #3498db;">
+                    <i class="fas fa-microscope" style="font-size: 28px; color: #3498db;"></i>
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: #1e293b; text-transform: uppercase;">Modern Labs</h3>
+                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.6;">Advanced pathology and diagnostic equipment for high-accuracy medical testing.</p>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 15px; border-bottom: 4px solid #f1c40f; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
+                <div style="width: 70px; height: 70px; background: #fffdf0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 2px solid #f1c40f;">
+                    <i class="fas fa-bed-pulse" style="font-size: 28px; color: #f1c40f;"></i>
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: #1e293b; text-transform: uppercase;">IPD Services</h3>
+                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.6;">Hygienic wards and critical care beds available for indoor patient admissions.</p>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 15px; border-bottom: 4px solid #e74c3c; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
+                <div style="width: 70px; height: 70px; background: #fff5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 2px solid #e74c3c;">
+                    <i class="fas fa-ambulance" style="font-size: 28px; color: #e74c3c;"></i>
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: #1e293b; text-transform: uppercase;">24/7 Emergency</h3>
+                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.6;">Round-the-clock emergency support and critical care for life-saving situations.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock content %}

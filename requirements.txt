@@ -1,0 +1,18 @@
+# Web Framework
+Django==4.2.17
+
+# Database Driver for MySQL/MariaDB
+mysqlclient
+
+# Utility and Styling
+sqlparse
+asgiref
+tzdata
+
+# Frontend & UI Notifications
+# (Note: Tailwind and SweetAlert2 are used via CDN in your templates, 
+# so they don't need to be in this file)
+
+# Optional (If you installed for CSV uploads or styling)
+django-extensions
+python-dotenv

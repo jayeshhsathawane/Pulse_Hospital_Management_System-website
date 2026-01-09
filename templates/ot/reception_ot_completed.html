@@ -1,0 +1,119 @@
+{% extends 'reception/reception_dashboard.html' %}
+{% block content %}
+<div class="space-y-4 max-w-6xl mx-auto px-2 pb-10 min-h-screen bg-slate-50/50">
+    
+    <div class="bg-white p-4 rounded-lg shadow-sm border-b-4 border-blue-600 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-100 shadow-inner">
+                <i class="fas fa-archive text-blue-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-black tracking-tighter text-slate-800 uppercase italic leading-none">Surgery <span class="text-blue-600">Archives</span></h2>
+                <p class="text-slate-400 text-[9px] font-bold tracking-[0.2em] uppercase mt-1">Historical Records & CSV Reports</p>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+            <form method="GET" class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
+                <div class="relative group">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-slate-300 text-[10px]"></i>
+                    <input type="text" name="q" placeholder="Name or ID..." value="{{ search_query }}" 
+                           class="bg-transparent text-slate-700 text-xs pl-8 pr-3 py-1.5 outline-none border-none focus:ring-0 w-36 md:w-48 font-bold">
+                </div>
+                <input type="date" name="search_date" value="{{ selected_date }}" 
+                       class="bg-white text-slate-600 rounded border border-slate-200 px-2 py-1.5 text-[10px] font-black outline-none shadow-sm cursor-pointer">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-sm">
+                    Filter
+                </button>
+            </form>
+            
+            <button onclick="exportTableToCSV('Surgery_Log_Report.csv')" 
+                    class="bg-white text-blue-600 border border-blue-200 px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-600 hover:text-white transition flex items-center group">
+                <i class="fas fa-file-csv mr-2 text-sm"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="completedTable">
+                <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4">Patient Identity</th>
+                        <th class="px-6 py-4">Procedure Details</th>
+                        <th class="px-6 py-4">Medical Team</th>
+                        <th class="px-6 py-4 text-center">Medical Report</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for ot in ot_list %}
+                    <tr class="hover:bg-blue-50/30 transition-all group">
+                        <td class="px-6 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 uppercase group-hover:text-blue-700 transition-colors leading-tight">
+                                    {% if ot.patient_name %}{{ ot.patient_name }}{% elif ot.appointment %}{{ ot.appointment.patient_name }}{% else %}Unknown Patient{% endif %}
+                                </span>
+                                
+                                <span class="text-[9px] font-mono font-black text-blue-600 mt-1 flex items-center bg-blue-50 w-max px-2 py-0.5 rounded border border-blue-100">
+                                    ID: {% if ot.reg_id_manual %}{{ ot.reg_id_manual }}{% elif ot.appointment and ot.appointment.patient_profile %}{{ ot.appointment.patient_profile.reg_number }}{% else %}N/A{% endif %}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <p class="text-xs font-black text-slate-700 uppercase tracking-tight">{{ ot.surgery_name }}</p>
+                            <span class="text-[8px] font-black text-emerald-600 uppercase flex items-center mt-1 bg-emerald-50 w-max px-1.5 py-0.5 rounded border border-emerald-100">
+                                <span class="h-1 w-1 bg-emerald-500 rounded-full mr-1 animate-pulse"></span> Case Closed
+                            </span>
+                        </td>
+                        <td class="px-6 py-3">
+                            <p class="text-[10px] font-black text-slate-600 uppercase tracking-tighter">DR. {{ ot.assistant_surgeon|default:ot.doctor.name|upper }}</p>
+                            <p class="text-[9px] font-bold text-slate-400 mt-0.5 italic">{{ ot.ot_date|date:"d F, Y" }}</p>
+                        </td>
+                        <td class="px-6 py-3 text-center">
+                            <a href="{% url 'pulsehospital:print_operation_note' ot.id %}" target="_blank" 
+                               class="inline-flex items-center justify-center h-9 w-9 bg-slate-100 text-slate-500 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95 border border-slate-200">
+                                <i class="fas fa-print text-sm"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-20 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-search-minus text-4xl text-slate-100 mb-3"></i>
+                                <p class="text-slate-400 font-black uppercase tracking-widest text-[10px]">No historical records found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Logic Preserved (As provided)
+    function exportTableToCSV(filename) {
+        var csv = [];
+        var rows = document.querySelectorAll("#completedTable tr");
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].style.display !== 'none') {
+                var row = [], cols = rows[i].querySelectorAll("td, th");
+                for (var j = 0; j < cols.length - 1; j++) {
+                    var cleanText = cols[j].innerText.replace(/\n/g, " ").replace(/,/g, ";").trim();
+                    row.push('"' + cleanText + '"');
+                }
+                csv.push(row.join(","));
+            }
+        }
+        var csvFile = new Blob([csv.join("\n")], {type: "text/csv;charset=utf-8;"});
+        var downloadLink = document.createElement("a");
+        downloadLink.download = filename;
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+    }
+</script>
+{% endblock %}

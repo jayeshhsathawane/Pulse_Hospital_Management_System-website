@@ -1,0 +1,88 @@
+{% extends 'reception/reception_dashboard.html' %}
+{% block content %}
+<div class="space-y-4 max-w-6xl mx-auto px-2 pb-10 min-h-screen bg-slate-50/50">
+    
+    <div class="bg-white p-4 rounded-lg shadow-sm border-b-4 border-blue-600 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-100">
+                <i class="fas fa-file-invoice text-blue-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-black tracking-tighter text-slate-800 uppercase italic">Billing <span class="text-blue-600">Archives</span></h2>
+                <p class="text-slate-400 text-[9px] font-bold tracking-[0.2em] uppercase mt-1">Manage & Re-print Patient Invoices</p>
+            </div>
+        </div>
+        
+        <form method="GET" class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <div class="relative group">
+                <i class="fas fa-search absolute left-3 top-2.5 text-slate-300 text-[10px]"></i>
+                <input type="text" name="q" placeholder="Invoice or Patient Name..." 
+                       class="bg-transparent text-slate-700 text-xs pl-8 pr-3 py-1.5 outline-none border-none focus:ring-0 w-48 md:w-64 font-bold">
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4">Invoice No</th>
+                        <th class="px-6 py-4">Patient Details</th>
+                        <th class="px-6 py-4">Payment Info</th>
+                        <th class="px-6 py-4 text-right">Amount</th>
+                        <th class="px-6 py-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for bill in bills %}
+                    <tr class="hover:bg-blue-50/30 transition-all group">
+                        <td class="px-6 py-3 font-mono text-xs font-black text-blue-600">
+                            {{ bill.bill_number }}
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 uppercase tracking-tight">{{ bill.patient.name }}</span>
+                                <span class="text-[9px] font-bold text-slate-400 uppercase mt-0.5 italic">Reg ID: {{ bill.patient.reg_number }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="flex items-center space-x-2">
+                                {% if bill.payment_mode == 'Cash' %}
+                                    <span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-black rounded border border-emerald-100 uppercase">Cash</span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100 uppercase">Online</span>
+                                    <span class="text-[9px] text-slate-400 font-mono font-bold">{{ bill.transaction_id }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-1 font-bold">{{ bill.bill_date|date:"d M Y, h:i A" }}</p>
+                        </td>
+                        <td class="px-6 py-3 text-right">
+                            <span class="text-sm font-black text-slate-800 tracking-tighter">₹ {{ bill.total_amount }}</span>
+                        </td>
+                      <td class="px-6 py-3 text-center">
+    <a href="{% url 'pulsehospital:print_bill' bill.id %}" target="_blank"
+       class="inline-flex items-center justify-center h-8 w-8 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all border border-blue-100">
+        <i class="fas fa-print text-xs"></i>
+    </a>
+</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-20 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-receipt text-4xl text-slate-100 mb-3"></i>
+                                <p class="text-slate-400 font-black uppercase tracking-widest text-[10px]">No billing history available</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

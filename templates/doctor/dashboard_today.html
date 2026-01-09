@@ -1,0 +1,52 @@
+{% extends 'doctor/doctor_dashboard.html' %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-800">Today's Schedule</h2>
+        <p class="text-gray-500 font-medium">Total: {{ appointments.count }} Patients</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                    <tr>
+                        <th class="px-8 py-4">Time</th>
+                        <th class="px-8 py-4">Reg ID</th>
+                        <th class="px-8 py-4">Patient Name</th>
+                        <th class="px-8 py-4">Status</th>
+                        <th class="px-8 py-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for appt in appointments %}
+                    <tr class="hover:bg-blue-50/50 transition">
+                        <td class="px-8 py-5 text-gray-600 font-medium">{{ appt.appointment_time }}</td>
+                        <td class="px-8 py-5 font-mono text-sm text-blue-600 font-bold">
+                            {{ appt.patient_profile.reg_number|default:"PENDING" }}
+                        </td>
+                        <td class="px-8 py-5 text-gray-800 font-semibold">{{ appt.patient_name }}</td>
+                        <td class="px-8 py-5">
+                            {% if appt.status == 'Completed' %}
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-[10px] font-bold uppercase">Finished</span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold uppercase">Waiting</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-8 py-5 text-center">
+                            <a href="{% url 'pulsehospital:patient_detail' appt.pk %}" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition">
+                                {% if appt.status == 'Completed' %}View Records{% else %}Treat Now{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-8 py-10 text-center text-gray-400 italic">No appointments for today.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

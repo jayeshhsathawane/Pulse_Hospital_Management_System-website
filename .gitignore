@@ -1,0 +1,31 @@
+# --- Python Specific ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# --- Django Specific ---
+db.sqlite3
+.env
+*.log
+local_settings.py
+
+# --- Static & Media ---
+
+/static_root/
+/media/
+
+# --- IDE Specific ---
+.vscode/
+.idea/
+*.swp
+
+# --- OS Specific ---
+.DS_Store
+<<<<<<< HEAD
+Thumbs.db
+=======
+Thumbs.db
+>>>>>>> 638ccb04c2ed0a5b25884bb169aae325d49eddf7

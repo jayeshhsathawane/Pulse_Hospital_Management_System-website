@@ -1,0 +1,569 @@
+{% extends 'doctor/doctor_dashboard.html' %} {% block content %}
+<style>
+  /* 🖨️ Professional Letterhead Print optimizations */
+  @media print {
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    body,
+    html {
+      background-color: white !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .no-print,
+    aside,
+    header,
+    nav,
+    button {
+      display: none !important;
+    }
+    #printableSummary {
+      display: block !important;
+      position: absolute;
+      left: 0;
+      top: 160px !important;
+      width: 100%;
+      background-color: white !important;
+      visibility: visible;
+      padding: 0 40px !important;
+      font-size: 12px;
+    }
+    #printableSummary *,
+    table,
+    tr,
+    td,
+    th {
+      background-color: white !important;
+      color: black !important;
+      border-color: #000 !important;
+    }
+    .section-box {
+      border-bottom: 1px solid #eee;
+      padding: 5px 0;
+      margin-bottom: 5px;
+    }
+  }
+  #printableSummary {
+    display: none;
+  }
+  .input-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    display: block;
+    letter-spacing: 0.05em;
+  }
+</style>
+
+<div class="max-w-5xl mx-auto space-y-6 px-2 sm:px-4 pb-10">
+  <div
+    class="no-print bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end"
+  >
+    <div class="w-full relative group">
+      <label class="input-label ml-1">Patient Search (Registration ID)</label>
+      <div class="relative">
+        <i
+          class="fas fa-id-card absolute left-4 top-3 text-slate-300 group-focus-within:text-blue-500 transition-colors"
+        ></i>
+        <input
+          type="text"
+          id="reg_search"
+          value="{{ reg_id|default:'' }}"
+          class="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-semibold transition-all"
+          placeholder="e.g. MH/BHU/NHO740"
+        />
+      </div>
+    </div>
+    <button
+      onclick="window.location.href='?reg_id=' + document.getElementById('reg_search').value"
+      class="w-full sm:w-auto bg-blue-600 text-white px-10 py-2.5 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95"
+    >
+      SEARCH
+    </button>
+  </div>
+
+  <form method="POST" id="dischargeForm" class="no-print space-y-6">
+    {% csrf_token %}
+    <input type="hidden" name="patient_id" value="{{ data.profile.id }}" />
+
+    <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+      <div
+        class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6"
+      >
+        <h2
+          class="text-sm font-black text-slate-800 uppercase tracking-widest italic flex items-center"
+        >
+          <i class="fas fa-file-medical-alt mr-2 text-blue-500"></i> Hospital
+          Discharge Summary
+        </h2>
+        <span
+          class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest"
+          >Clinical Draft</span
+        >
+      </div>
+
+      <div
+        class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-slate-50 p-5 rounded-lg border border-slate-100"
+      >
+        <div class="space-y-3">
+          <div>
+            <span class="input-label">Patient Name</span
+            ><span class="font-bold text-sm text-slate-800 uppercase"
+              >{{ data.profile.name|default:"--" }}</span
+            >
+          </div>
+          <div>
+            <span class="input-label">Hospital Reg. No.</span
+            ><span class="text-blue-700 font-black text-xs font-mono"
+              >MH/BHU/NHO740</span
+            >
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <span class="input-label">Age / Gender</span
+            ><span class="font-bold text-sm text-slate-800"
+              >{{ data.profile.age|default:"--" }}Y / {{ data.profile.gender|default:"--" }}</span
+            >
+          </div>
+          <div>
+            <span class="input-label">Date of Admission & Time </span>
+            <input
+              type="datetime-local"
+              name="adm_date"
+              value="{{ data.record.date_of_admission|date:'Y-m-d\TH:i' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-black bg-slate-100 text-slate-600 focus:border-blue-500 outline-none"
+              readonly
+            />
+          </div>
+        </div>
+        <div class="space-y-3 text-right">
+          <div>
+            <span class="input-label">Consultant Doctor</span
+            ><span class="font-bold text-sm uppercase text-slate-700"
+              >{{ doctor_full_name|upper }}</span
+            >
+          </div>
+          <div>
+            <span class="input-label">Discharge Date</span
+            ><span class="font-black text-sm text-blue-600"
+              >{{ current_time|date:"d M Y" }}</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <label class="input-label">Presenting Complaints</label>
+          <textarea
+            name="presenting_complaints"
+            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
+            rows="2"
+            placeholder="Patient's primary issues..."
+          >
+{{ data.last_visit.symptoms|default:'' }}</textarea
+          >
+        </div>
+        <div>
+          <label class="input-label">Final Diagnosis</label>
+          <textarea
+            name="final_diagnosis"
+            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
+            rows="2"
+            placeholder="Confirmed clinical diagnosis..."
+          >
+{{ data.last_visit.diagnosis|default:'' }}</textarea
+          >
+        </div>
+      </div>
+
+      <div class="bg-blue-50/30 p-5 rounded-lg border border-blue-100 mb-8">
+        <h3
+          class="font-black text-blue-700 text-[10px] uppercase mb-4 flex items-center gap-2 tracking-widest"
+        >
+          <i class="fas fa-microscope text-xs"></i> Key Laboratory
+          Investigations
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div>
+            <label class="input-label">Hb (gm/dl)</label
+            ><input
+              type="text"
+              name="hb"
+              value="{{ data.record.hb|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">TLC Count</label
+            ><input
+              type="text"
+              name="tlc"
+              value="{{ data.record.tlc|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">Platelets</label
+            ><input
+              type="text"
+              name="platelets"
+              value="{{ data.record.platelets|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">LFT (TB/DB/IB)</label
+            ><input
+              type="text"
+              name="lft"
+              value="{{ data.record.lft|default:'' }}"
+              placeholder="1.0/0.4/0.6"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">BUL</label
+            ><input
+              type="text"
+              name="bul"
+              value="{{ data.record.bul|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">Creatinine</label
+            ><input
+              type="text"
+              name="creatinine"
+              value="{{ data.record.creatinine|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label class="input-label">X-Ray Findings</label
+            ><input
+              type="text"
+              name="xray"
+              value="{{ data.record.xray|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">CT Scan Report</label
+            ><input
+              type="text"
+              name="ct_scan"
+              value="{{ data.record.ct_scan|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="input-label">MRI Findings</label
+            ><input
+              type="text"
+              name="mri"
+              value="{{ data.record.mri|default:'' }}"
+              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div>
+          <label class="input-label text-blue-600"
+            >Gen. Condition on Admission</label
+          >
+          <textarea
+            name="cond_admission"
+            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
+            rows="1"
+            placeholder="Stable/Critical/etc..."
+          ></textarea>
+        </div>
+        <div>
+          <label class="input-label text-emerald-600"
+            >Gen. Condition on Discharge</label
+          >
+          <textarea
+            name="cond_discharge"
+            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
+            rows="1"
+            placeholder="Improving/Stable..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div>
+          <label class="input-label">In-Hospital Treatment Summary</label>
+          <textarea
+            name="treatment_given"
+            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
+            rows="2"
+            placeholder="Details of medicines/procedures given in ward..."
+          >
+{{ data.record.treatment_given|default:'' }}</textarea
+          >
+        </div>
+        <div>
+          <label class="input-label text-blue-800"
+            >Home Care Treatment Advised (Rx)</label
+          >
+          <textarea
+            name="treatment_advised"
+            class="w-full p-4 border border-blue-200 bg-blue-50/20 rounded-lg text-sm font-black focus:border-blue-500 outline-none shadow-inner"
+            rows="4"
+            placeholder="1. Medicine A ... 2. Medicine B ..."
+          >
+{{ data.record.treatment_advised|default:'' }}</textarea
+          >
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="input-label">Follow Up Plan</label>
+            <input
+              type="text"
+              name="follow_up"
+              value="{{ data.record.follow_up|default:'' }}"
+              class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold focus:border-blue-500 outline-none"
+              placeholder="After 7 days / SOS"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="mt-10 flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100"
+      >
+        <button
+          type="submit"
+          class="flex-1 bg-slate-900 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-lg active:scale-95"
+        >
+          <i class="fas fa-save mr-2"></i> SAVE RECORD
+        </button>
+        <button
+          type="button"
+          onclick="preparePrint()"
+          class="flex-1 bg-blue-600 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition active:scale-95"
+        >
+          <i class="fas fa-print mr-2"></i> GENERATE PDF / PRINT
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div id="printableSummary">
+    <div
+      style="
+        text-align: center;
+        border-bottom: 2px solid black;
+        margin-bottom: 10px;
+      "
+    >
+      <h2
+        style="
+          font-size: 20px;
+          font-weight: bold;
+          margin: 0;
+          padding-bottom: 5px;
+        "
+      >
+        DISCHARGE SUMMARY
+      </h2>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px">
+      <tr>
+        <td style="width: 50%; padding: 3px">
+          <strong>Name:</strong> {{ data.profile.name|upper }}
+        </td>
+        <td style="width: 50%; padding: 3px; text-align: right">
+          <strong>Reg No:</strong> MH/BHU/NHO740
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 3px">
+          <strong>Age / Sex:</strong> {{ data.profile.age }}Y / {{ data.profile.gender }}
+        </td>
+        <td style="padding: 3px; text-align: right">
+          <strong>Registration ID:</strong> {{ data.profile.reg_number }}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 3px">
+          <strong>DOA:</strong> {{ data.record.date_of_admission|date:"d M Y h:i A" }}
+        </td>
+        <td style="padding: 3px; text-align: right">
+          <strong>DOD:</strong> {{ current_time|date:"d M Y" }}
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding: 3px">
+          <strong>Consultant:</strong> {{ doctor_full_name|upper }}
+        </td>
+      </tr>
+    </table>
+
+    <div class="section-box">
+      <p>
+        <strong>PRESENTING COMPLAINTS:</strong> <span id="pr_complaints"></span>
+      </p>
+      <p><strong>FINAL DIAGNOSIS:</strong> <span id="pr_diagnosis"></span></p>
+    </div>
+
+    <p
+      style="
+        text-decoration: underline;
+        font-weight: bold;
+        margin: 10px 0 5px 0;
+        font-size: 11px;
+      "
+    >
+      SUMMARY OF KEY INVESTIGATIONS:
+    </p>
+    <table
+      style="
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid black;
+        font-size: 11px;
+      "
+    >
+      <tr>
+        <td style="border: 1px solid black; padding: 4px">
+          <strong>CBC:</strong> <span id="pr_hb"></span>
+          <span id="pr_tlc"></span>, PLT: <span id="pr_plt"></span>
+        </td>
+        <td style="border: 1px solid black; padding: 4px">
+          <strong>LFT:</strong> <span id="pr_lft"></span>
+        </td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid black; padding: 4px">
+          <strong>KFT:</strong> <span id="pr_bul"></span>
+          <span id="pr_creat"></span>
+        </td>
+        <td style="border: 1px solid black; padding: 4px">
+          <strong>X-RAY:</strong> <span id="pr_xray"></span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="border: 1px solid black; padding: 4px">
+          <strong>CT/MRI:</strong> <span id="pr_ct"></span> /
+          <span id="pr_mri"></span>
+        </td>
+      </tr>
+    </table>
+
+    <div class="section-box" style="margin-top: 10px">
+      <p>
+        <strong>GEN. CONDITION ON ADMISSION:</strong>
+        <span id="pr_cond_adm"></span>
+      </p>
+      <p>
+        <strong>GEN. CONDITION ON DISCHARGE:</strong>
+        <span id="pr_cond_dis"></span>
+      </p>
+    </div>
+
+    <div style="margin-top: 10px">
+      <p><strong>TREATMENT GIVEN:</strong></p>
+      <p
+        id="pr_treatment_given"
+        style="padding-left: 15px; min-height: 40px; white-space: pre-line"
+      ></p>
+    </div>
+
+    <div
+      style="
+        margin-top: 10px;
+        border: 1px solid #000;
+        padding: 8px;
+        background: #f9f9f9;
+      "
+    >
+      <p><strong>TREATMENT ADVISED ON DISCHARGE:</strong></p>
+      <p
+        id="pr_treatment_advised"
+        style="
+          padding-left: 15px;
+          font-weight: bold;
+          font-size: 14px;
+          white-space: pre-line;
+        "
+      ></p>
+    </div>
+
+    <p style="margin-top: 10px">
+      <strong>FOLLOW UP:</strong> <span id="pr_follow_up"></span>
+    </p>
+
+    <div style="margin-top: 60px; text-align: right">
+      <div style="display: inline-block; text-align: center">
+        <p
+          style="
+            border-top: 1px solid black;
+            width: 200px;
+            padding-top: 5px;
+            font-weight: bold;
+          "
+        >
+          Doctor's Signature <br />
+          <small>DR. {{ doctor_full_name|upper }}</small>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function preparePrint() {
+    // Mapping UI values to Print Template
+    document.getElementById("pr_complaints").innerText =
+      document.getElementsByName("presenting_complaints")[0].value;
+    document.getElementById("pr_diagnosis").innerText =
+      document.getElementsByName("final_diagnosis")[0].value;
+    document.getElementById("pr_hb").innerText =
+      document.getElementsByName("hb")[0].value;
+    document.getElementById("pr_tlc").innerText =
+      document.getElementsByName("tlc")[0].value;
+    document.getElementById("pr_plt").innerText =
+      document.getElementsByName("platelets")[0].value;
+    document.getElementById("pr_lft").innerText =
+      document.getElementsByName("lft")[0].value;
+    document.getElementById("pr_bul").innerText =
+      document.getElementsByName("bul")[0].value;
+    document.getElementById("pr_creat").innerText =
+      document.getElementsByName("creatinine")[0].value;
+    document.getElementById("pr_xray").innerText =
+      document.getElementsByName("xray")[0].value;
+    document.getElementById("pr_ct").innerText =
+      document.getElementsByName("ct_scan")[0].value;
+    document.getElementById("pr_mri").innerText =
+      document.getElementsByName("mri")[0].value;
+    document.getElementById("pr_cond_adm").innerText =
+      document.getElementsByName("cond_admission")[0].value;
+    document.getElementById("pr_cond_dis").innerText =
+      document.getElementsByName("cond_discharge")[0].value;
+    document.getElementById("pr_treatment_given").innerText =
+      document.getElementsByName("treatment_given")[0].value;
+    document.getElementById("pr_treatment_advised").innerText =
+      document.getElementsByName("treatment_advised")[0].value;
+    document.getElementById("pr_follow_up").innerText =
+      document.getElementsByName("follow_up")[0].value;
+
+    window.print();
+  }
+</script>
+{% endblock %}

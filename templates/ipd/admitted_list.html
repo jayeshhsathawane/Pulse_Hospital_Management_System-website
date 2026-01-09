@@ -1,0 +1,111 @@
+{% extends 'reception/reception_dashboard.html' %}
+{% block content %}
+<div class="space-y-4 max-w-6xl mx-auto px-2 pb-10 min-h-screen bg-slate-50/50">
+    
+    <div class="bg-white p-4 rounded-lg shadow-sm border-b-4 border-blue-600 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-100 shadow-inner">
+                <i class="fas fa-procedures text-blue-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-black tracking-tighter text-slate-800 uppercase italic leading-none">Currently <span class="text-blue-600">Admitted</span></h2>
+                <p class="text-slate-400 text-[9px] font-bold tracking-[0.2em] uppercase mt-1">In-Patient Department (IPD) Live Status</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md shadow-blue-100 flex items-center">
+                <span class="h-1.5 w-1.5 bg-white rounded-full mr-2 animate-pulse"></span>
+                Active Load: {{ admissions|length }}
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-lg">
+        
+        <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4">Admission ID</th>
+                        <th class="px-6 py-4">Patient Identity</th>
+                        <th class="px-6 py-4">Ward / Bed Allocation</th>
+                        <th class="px-6 py-4 text-right">Medical Control</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for adm in admissions %}
+                    <tr class="hover:bg-blue-50/30 transition-all group">
+                        <td class="px-6 py-3">
+                            <span class="font-mono font-black text-blue-600 bg-blue-50/50 px-2 py-0.5 rounded text-[11px] border border-blue-100">
+                                {{ adm.admission_id }}
+                            </span>
+                            <p class="text-[8px] text-slate-400 font-black uppercase mt-1 tracking-widest">DOA: {{ adm.admission_date|date:"d M Y" }}</p>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 uppercase group-hover:text-blue-700 transition-colors leading-tight">
+                                    {{ adm.patient.name }}
+                                </span>
+                                <span class="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-tighter">
+                                    Reg Number: {{ adm.patient.reg_number|default:"--N/A--" }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-slate-800 text-white px-2 py-1 rounded border border-slate-700 text-[9px] font-black uppercase tracking-wider">
+                                    <i class="fas fa-bed mr-1 text-blue-400"></i> Bed {{ adm.bed.bed_number }}
+                                </span>
+                                <span class="text-[9px] font-bold text-slate-500 uppercase italic">
+                                    {{ adm.bed.ward.name|default:"General Ward" }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3 text-right">
+                            <a href="{% url 'pulsehospital:ipd_patient_profile' adm.id %}" class="inline-flex items-center justify-center bg-slate-100 text-slate-500 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95 border border-slate-200">
+                                <i class="fas fa-file-medical-alt mr-1.5 text-xs"></i> Manage Case
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-procedures text-3xl text-slate-100 mb-3 block"></i>
+                                <p class="text-slate-400 font-black uppercase tracking-widest text-[10px]">Zero patients in IPD currently</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="md:hidden divide-y divide-slate-100">
+            {% for adm in admissions %}
+            <div class="p-4 space-y-3">
+                <div class="flex justify-between items-start">
+                    <div class="space-y-1">
+                        <span class="text-[8px] font-black text-blue-500 uppercase tracking-widest">#{{ adm.admission_id }}</span>
+                        <h4 class="text-base font-black text-slate-800 tracking-tight uppercase leading-none">{{ adm.patient.name }}</h4>
+                        <div class="flex items-center text-[9px] text-slate-400 font-bold uppercase mt-1">
+                            <i class="fas fa-calendar-check mr-1 text-blue-400/50"></i> {{ adm.admission_date|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-black uppercase shadow-md border border-blue-500 shrink-0">
+                        Bed {{ adm.bed.bed_number }}
+                    </span>
+                </div>
+                <a href="{% url 'pulsehospital:ipd_patient_profile' adm.id %}" class="block w-full text-center bg-slate-900 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">
+                    Clinical Patient Profile
+                </a>
+            </div>
+            {% empty %}
+            <div class="p-10 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No Admissions Found</div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

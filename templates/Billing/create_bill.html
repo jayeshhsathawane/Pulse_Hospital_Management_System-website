@@ -1,0 +1,254 @@
+{% extends 'reception/reception_dashboard.html' %}
+{% block content %}
+<style>
+    /* 🖨️ Enhanced Print Styles */
+    @media print {
+        @page { size: A4; margin: 1cm; }
+        .no-print { display: none !important; }
+        body { background: white !important; -webkit-print-color-adjust: exact !important; }
+        #printableArea { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    }
+    #printableArea { display: none; }
+
+    /* UI Enhancements */
+    .bill-input:focus { border-color: #2563eb !important; background-color: white !important; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+
+<div class="max-w-5xl mx-auto pb-10 px-4 space-y-6">
+    
+    <div class="no-print bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Find Patient for Billing</label>
+        <form method="GET" class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1 group">
+                <i class="fas fa-search absolute left-4 top-3 text-slate-300 group-focus-within:text-blue-500"></i>
+                <input type="text" name="q" placeholder="Enter Mobile Number or Registration ID..." 
+                       class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold focus:bg-white focus:border-blue-500 transition-all" 
+                       value="{{ query|default:'' }}">
+            </div>
+            <button type="submit" class="bg-slate-800 text-white px-8 py-2.5 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-black transition-all">
+                Search
+            </button>
+        </form>
+    </div>
+
+    {% if admission %}
+    <div class="no-print bg-blue-50 border border-blue-100 rounded-lg p-5 flex justify-between items-center shadow-sm">
+        <div class="flex items-center space-x-4">
+            <div class="h-12 w-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-lg">
+                {{ admission.patient.name|slice:":1" }}
+            </div>
+            <div>
+                <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none mb-1">Patient Verified</p>
+                <h3 class="text-base font-black text-slate-800 uppercase">{{ admission.patient.name }}</h3>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Reg No: {{ admission.patient.reg_number }} | Bed: {{ admission.bed.bed_number }} ({{ admission.bed.ward.name }})</p>
+            </div>
+        </div>
+        <div class="text-right hidden sm:block">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Admission Date</p>
+            <p class="text-sm font-black text-slate-700">{{ admission.admission_date|date:"d M Y" }}</p>
+            
+        </div>
+    </div>
+
+    <div class="no-print bg-white border border-slate-200 shadow-sm overflow-hidden rounded-lg">
+        <div class="bg-white border-b-2 border-blue-600 p-5 flex justify-between items-center">
+            <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight">Financial Record Entry</h2>
+            <i class="fas fa-calculator text-slate-300"></i>
+        </div>
+
+        <form method="POST" class="p-6 space-y-6" id="billingForm">
+            {% csrf_token %}
+            <input type="hidden" name="admission_id" value="{{ admission.id }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Consultation / Visit Charges</label>
+                    <input type="number" name="consultation" id="in_consult" class="bill-input w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm outline-none transition-all" value="0" min="0">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Ward / ICU / Bed Charges</label>
+                    <input type="number" name="ward_charges" id="in_ward" class="bill-input w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm outline-none transition-all" value="0" min="0">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">OT / Surgical Charges</label>
+                    <input type="number" name="ot_charges" id="in_ot" class="bill-input w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm outline-none transition-all" value="0" min="0">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Medicine / Pharmacy Amount</label>
+                    <input type="number" name="medicine" id="in_med" class="bill-input w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm outline-none transition-all" value="0" min="0">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Investigation / Other Services</label>
+                    <input type="number" name="other" id="in_other" class="bill-input w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-sm outline-none transition-all" value="0" min="0">
+                </div>
+
+                <div class="bg-slate-900 rounded-lg p-4 flex flex-col justify-center items-center text-white shadow-xl border-b-4 border-blue-500">
+                    <p class="text-[9px] font-black uppercase opacity-60 tracking-[0.2em]">Net Amount Payable</p>
+                    <h3 class="text-2xl font-black mt-1 text-blue-400">₹ <span id="totalDisplay">0</span></h3>
+                    <input type="hidden" name="total_hidden" id="total_hidden" value="0">
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Mode Selection</label>
+                    <div class="flex gap-4">
+                        <label class="flex-1 flex items-center justify-center p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-blue-50 transition-all font-bold text-xs uppercase tracking-widest group">
+                            <input type="radio" name="payment_mode" value="Cash" checked class="mr-2 accent-blue-600" onchange="toggleTxn(false)"> Cash
+                        </label>
+                        <label class="flex-1 flex items-center justify-center p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-blue-50 transition-all font-bold text-xs uppercase tracking-widest group">
+                            <input type="radio" name="payment_mode" value="Online" class="mr-2 accent-blue-600" onchange="toggleTxn(true)"> Online
+                        </label>
+                    </div>
+                </div>
+
+                <div id="txn_div" class="hidden space-y-1">
+                    <label class="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">Txn ID / UTR Number</label>
+                    <input type="text" name="transaction_id" id="txn_id_input" placeholder="Enter Transaction Details" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg font-bold text-sm outline-none">
+                </div>
+            </div>
+
+            <div class="pt-4 flex gap-4">
+                <button type="submit" class="flex-1 bg-slate-900 text-white py-4 rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:bg-black transition-all active:scale-95 flex items-center justify-center">
+                    <i class="fas fa-save mr-2"></i> Save Bill Record
+                </button>
+                <button type="button" onclick="preparePrint()" class="flex-1 bg-blue-600 text-white py-4 rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center">
+                    <i class="fas fa-print mr-2"></i> Preview & Print Rx
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="printableArea">
+        <div style="display: flex; align-items: center; border-bottom: 3px solid #1e40af; padding-bottom: 15px; margin-bottom: 20px;">
+            <img src="/static/public/logo.jpg" style="width: 85px; height: 85px; margin-right: 20px; border-radius: 50%;">
+            <div style="flex: 1;">
+                <h1 style="font-size: 28px; font-weight: 900; color: #1e40af; margin: 0; text-transform: uppercase; letter-spacing: -1px;">Pulse Multispeciality Hospital</h1>
+                <p style="font-size: 11px; color: #444; margin: 2px 0; font-weight: 700; text-transform: uppercase;">Bhiwgade Critical Care & Maternity Home</p>
+                <p style="font-size: 11px; color: #444; margin: 1px 0; font-weight: 600;">Main Road, Takiya Ward, Bhandara - 441904</p>
+                <p style="font-size: 11px; color: #444; margin: 1px 0; font-weight: 600;">Contact: +91 9765211026 | Email: pulsemh21@gmail.com</p>
+            </div>
+            <div style="text-align: right;">
+                <div style="background: #1e40af; color: white; padding: 8px 20px; border-radius: 4px; font-weight: 900; font-size: 16px;">INVOICE</div>
+                <p style="font-size: 11px; margin-top: 8px; font-weight: 800;">Date: {{ today|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px;">
+            <div style="font-size: 12px; line-height: 1.8;">
+                <span style="color: #64748b; font-weight: 800; text-transform: uppercase; font-size: 10px;">Patient Details:</span><br>
+                <strong style="font-size: 16px; color: #0f172a;">{{ admission.patient.name }}</strong><br>
+                Age/Sex: {{ admission.patient.age }}Y / {{ admission.patient.gender }}<br>
+                Phone: {{ admission.patient.phone }}
+            </div>
+            <div style="font-size: 12px; line-height: 1.8; text-align: right;">
+                <span style="color: #64748b; font-weight: 800; text-transform: uppercase; font-size: 10px;">Billing Info:</span><br>
+                Reg ID: <strong>{{ admission.patient.reg_number }}</strong><br>
+                Adm ID: #{{ admission.admission_id }}<br>
+                Doctor: <strong>Dr.{% if bill.discharged_by %} {{ bill.discharged_by.name|upper }} {% elif admission.attending_doctor %} 
+        {{ admission.attending_doctor.name|upper }} 
+            {% else %}
+        --
+            {% endif %}</strong>
+            </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px;">
+            <thead>
+                <tr style="background: #1e3a8a; color: white; text-transform: uppercase; font-size: 11px;">
+                    <th style="padding: 12px; text-align: left; border-radius: 4px 0 0 4px;">Description of Services</th>
+                    <th style="padding: 12px; text-align: right; border-radius: 0 4px 4px 0;">Amount (INR)</th>
+                </tr>
+            </thead>
+            <tbody style="font-weight: 600; color: #334155;">
+                <tr style="border-bottom: 1px solid #edf2f7;">
+                    <td style="padding: 12px;">Consultation & Professional Charges</td>
+                    <td style="padding: 12px; text-align: right;" id="pr_consult">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #edf2f7;">
+                    <td style="padding: 12px;">Ward, Nursing & Bed Charges</td>
+                    <td style="padding: 12px; text-align: right;" id="pr_ward">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #edf2f7;">
+                    <td style="padding: 12px;">Operation Theater & Surgical Fees</td>
+                    <td style="padding: 12px; text-align: right;" id="pr_ot">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #edf2f7;">
+                    <td style="padding: 12px;">Medicines & Pharmaceutical Supplies</td>
+                    <td style="padding: 12px; text-align: right;" id="pr_med">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #edf2f7;">
+                    <td style="padding: 12px;">Diagnostic Investigations & Others</td>
+                    <td style="padding: 12px; text-align: right;" id="pr_other">-</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="font-size: 18px; font-weight: 900; color: #1e40af;">
+                    <td style="padding: 15px; text-align: right; text-transform: uppercase;">Total Bill Amount:</td>
+                    <td style="padding: 15px; text-align: right; border-top: 2px solid #1e40af;">₹ <span id="pr_total">0</span></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 20px;">
+            <div style="font-size: 11px; color: #64748b;">
+                <p style="font-weight: 800; color: #334155; margin-bottom: 5px; text-transform: uppercase;">Payment Summary:</p>
+                Mode: <strong id="pr_mode">Cash</strong><br>
+                Txn ID: <strong id="pr_txn">-</strong>
+            </div>
+            <div style="text-align: center;">
+                <div style="margin-top: 40px; border-top: 1px solid #334155; padding-top: 5px; font-size: 11px; font-weight: 800; text-transform: uppercase;">Authorized Signatory</div>
+                <p style="font-size: 9px; color: #94a3b8; margin-top: 5px;">Pulse Multispeciality Hospital</p>
+            </div>
+        </div>
+    </div>
+
+    {% elif query %}
+    <div class="no-print text-center py-16 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+        <i class="fas fa-user-slash text-3xl text-slate-300 mb-3"></i>
+        <p class="text-slate-800 font-black text-sm uppercase tracking-tight">Active Admission Not Found</p>
+        <p class="text-slate-400 text-[10px] uppercase font-bold mt-1 tracking-widest italic">Check search query: "{{ query }}"</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // 🟢 Payment Mode Toggle Logic
+    function toggleTxn(show) {
+        const div = document.getElementById('txn_div');
+        const input = document.getElementById('txn_id_input');
+        div.classList.toggle('hidden', !show);
+        if(!show) input.value = "-";
+    }
+
+    // 🟢 Real-time Calculation
+    const inputs = document.querySelectorAll('.bill-input');
+    inputs.forEach(input => {
+        input.addEventListener('input', calculateTotal);
+    });
+
+    function calculateTotal() {
+        let total = 0;
+        inputs.forEach(i => { total += parseFloat(i.value || 0); });
+        document.getElementById('totalDisplay').innerText = total.toLocaleString('en-IN');
+        document.getElementById('total_hidden').value = total;
+    }
+
+    // 🟢 Prepare Data for Printing
+    function preparePrint() {
+        document.getElementById('pr_consult').innerText = document.getElementById('in_consult').value || '0';
+        document.getElementById('pr_ward').innerText = document.getElementById('in_ward').value || '0';
+        document.getElementById('pr_ot').innerText = document.getElementById('in_ot').value || '0';
+        document.getElementById('pr_med').innerText = document.getElementById('in_med').value || '0';
+        document.getElementById('pr_other').innerText = document.getElementById('in_other').value || '0';
+        document.getElementById('pr_total').innerText = document.getElementById('totalDisplay').innerText;
+        
+        const mode = document.querySelector('input[name="payment_mode"]:checked').value;
+        document.getElementById('pr_mode').innerText = mode;
+        document.getElementById('pr_txn').innerText = document.getElementById('txn_id_input').value || '-';
+
+        window.print();
+    }
+</script>
+{% endblock %}

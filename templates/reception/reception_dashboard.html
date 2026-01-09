@@ -1,0 +1,307 @@
+{% extends 'dashboard_base.html' %}
+
+{% block sidebar_links %}
+{% with url_name=request.resolver_match.url_name %}
+<nav class="mt-4 space-y-1 px-3">
+    
+    <a href="{% url 'pulsehospital:reception_dashboard' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'reception_dashboard' %} 
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %} 
+            text-slate-400 hover:bg-slate-800 hover:text-white
+       {% endif %}">
+        <i class="fas fa-desktop mr-3 w-5 text-center transition-transform group-hover:scale-110"></i> 
+        <span class="text-[11px] font-black uppercase tracking-widest">Dashboard Overview</span>
+    </a>
+
+    <a href="{% url 'pulsehospital:walkin_appointment' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'walkin_appointment' %} 
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %} 
+            text-slate-400 hover:bg-slate-800 hover:text-white
+       {% endif %}">
+        <i class="fas fa-user-plus mr-3 w-5 text-center transition-transform group-hover:scale-110"></i> 
+        <span class="text-[11px] font-black uppercase tracking-widest">New Appointment</span>
+    </a>
+
+    <a href="{% url 'pulsehospital:daily_report' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'daily_report' %} 
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %} 
+            text-slate-400 hover:bg-slate-800 hover:text-white
+       {% endif %}">
+        <i class="fas fa-file-invoice mr-3 w-5 text-center transition-transform group-hover:scale-110"></i> 
+        <span class="text-[11px] font-black uppercase tracking-widest">Daily Report</span>
+    </a>
+
+    <div class="pt-2">
+        <button type="button" onclick="toggleIPDMenu()" 
+                class="w-full flex items-center justify-between py-3 px-4 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
+            <div class="flex items-center">
+                <i class="fas fa-procedures mr-3 w-5 text-center transition-transform group-hover:scale-110 text-orange-400"></i> 
+                <span class="text-[11px] font-black uppercase tracking-widest">IPD Management</span>
+            </div>
+            <i id="ipdArrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 
+               {% if 'ipd' in url_name or 'admitted' in url_name %} rotate-180 text-blue-400 {% endif %}">
+            </i>
+        </button>
+
+        <div id="ipdSubMenu" class="{% if 'ipd' in url_name or 'admitted' in url_name %}{% else %}hidden{% endif %} mt-1 space-y-1 bg-slate-900/30 rounded-lg overflow-hidden">
+            <a href="{% url 'pulsehospital:ipd_admission_form' %}" class="flex items-center py-2.5 pl-12 pr-4 text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-all">New Admission</a>
+            <a href="{% url 'pulsehospital:admitted_patients_list' %}" class="flex items-center py-2.5 pl-12 pr-4 text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-all">In-Patient List</a>
+            <a href="{% url 'pulsehospital:ipd_discharge_history' %}" class="flex items-center py-2.5 pl-12 pr-4 text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-all">Archive/Discharge</a>
+            <a href="{% url 'pulsehospital:ipd_bed_dashboard' %}" class="flex items-center py-2.5 pl-12 pr-4 text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-all">Bed Status</a>
+        </div>
+    </div>
+
+    <div class="pt-2">
+        <button type="button" onclick="toggleOTMenu()" 
+                class="w-full flex items-center justify-between py-3 px-4 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
+            <div class="flex items-center">
+                <i class="fas fa-bed-pulse mr-3 w-5 text-center transition-transform group-hover:scale-110 text-blue-500"></i> 
+                <span class="text-[11px] font-black uppercase tracking-widest">OT Management</span>
+            </div>
+            <i id="otArrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 
+                {% if 'reception_ot' in url_name %} rotate-180 text-blue-400 {% endif %}">
+            </i>
+        </button>
+
+        <div id="otSubMenu" class="{% if 'reception_ot' in url_name %}{% else %}hidden{% endif %} mt-1 space-y-1 bg-slate-900/30 rounded-lg overflow-hidden">
+            <a href="{% url 'pulsehospital:reception_ot_scheduled' %}" class="flex items-center py-2.5 pl-12 pr-4 text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-all">Upcoming OT</a>
+            <a href="{% url 'pulsehospital:reception_ot_completed' %}" class="flex items-center py-2.5 pl-12 pr-4 text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-all">Surgical Logs</a>
+        </div>
+    </div>
+</nav>
+<div class="px-6 py-4 mt-4 border-t border-slate-700/50">
+    <p class="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em] mb-4 italic">Financial Desk</p>
+    
+    <nav class="space-y-1">
+        <a href="{% url 'pulsehospital:create_bill' %}" 
+           class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+           {% if request.resolver_match.url_name == 'create_bill' %}
+                bg-blue-600 text-white shadow-lg shadow-blue-900/50
+           {% else %}
+                text-slate-400 hover:bg-slate-800 hover:text-blue-300
+           {% endif %}">
+            <i class="fas fa-plus-circle mr-3 w-5 text-center text-sm transition-transform group-hover:scale-110"></i> 
+            <span class="font-bold text-xs uppercase tracking-wider">Generate New Bill</span>
+        </a>
+
+        <a href="{% url 'pulsehospital:bill_history' %}" 
+           class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+           {% if request.resolver_match.url_name == 'bill_history' %}
+                bg-emerald-600 text-white shadow-lg shadow-emerald-900/50
+           {% else %}
+                text-slate-400 hover:bg-slate-800 hover:text-emerald-300
+           {% endif %}">
+            <i class="fas fa-history mr-3 w-5 text-center text-sm transition-transform group-hover:scale-110"></i> 
+            <span class="font-bold text-xs uppercase tracking-wider">Billing History</span>
+        </a>
+    </nav>
+</div>
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="space-y-6 px-2 sm:px-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <div class="bg-blue-600 p-6 rounded-xl shadow-lg text-white relative overflow-hidden group">
+            <i class="fas fa-stethoscope absolute -right-4 -bottom-4 text-7xl opacity-10 transition-transform group-hover:scale-110"></i>
+            <div class="flex justify-between items-start relative z-10">
+                <div>
+                    <p class="text-blue-100 font-black text-[10px] uppercase tracking-[0.2em]">General Medicine (MED)</p>
+                    <h3 class="text-4xl font-black mt-2">{{ med_total }} <span class="text-sm font-medium text-blue-200">Total Today</span></h3>
+                    <div class="mt-4 inline-flex items-center bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                        <span class="h-2 w-2 bg-yellow-400 rounded-full animate-pulse mr-2"></span>
+                        <p class="text-[10px] font-bold uppercase tracking-widest">Waiting in Queue: {{ med_pending }}</p>
+                    </div>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg"><i class="fas fa-user-md text-2xl"></i></div>
+            </div>
+        </div>
+
+        <div class="bg-pink-600 p-6 rounded-xl shadow-lg text-white relative overflow-hidden group">
+            <i class="fas fa-venus absolute -right-4 -bottom-4 text-7xl opacity-10 transition-transform group-hover:scale-110"></i>
+            <div class="flex justify-between items-start relative z-10">
+                <div>
+                    <p class="text-pink-100 font-black text-[10px] uppercase tracking-[0.2em]">Gynecology (GYN)</p>
+                    <h3 class="text-4xl font-black mt-2">{{ gyn_total }} <span class="text-sm font-medium text-pink-200">Total Today</span></h3>
+                    <div class="mt-4 inline-flex items-center bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                        <span class="h-2 w-2 bg-white rounded-full animate-pulse mr-2"></span>
+                        <p class="text-[10px] font-bold uppercase tracking-widest">Waiting in Queue: {{ gyn_pending }}</p>
+                    </div>
+                </div>
+                <div class="bg-white/20 p-3 rounded-lg"><i class="fas fa-female text-2xl"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for doc in doctors %}
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200 flex flex-col h-full hover:shadow-md transition-shadow">
+            <div class="p-4 {% if 'Gynec' in doc.specialty %}bg-pink-50/50 border-pink-100{% else %}bg-blue-50/50 border-blue-100{% endif %} border-b flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center {% if 'Gynec' in doc.specialty %}bg-pink-600 text-white{% else %}bg-blue-600 text-white{% endif %} text-xs shadow-sm">
+                        <i class="fas {% if 'Gynec' in doc.specialty %}fa-venus{% else %}fa-user-md{% endif %}"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-black text-slate-800 uppercase tracking-tight">Dr. {{ doc.name }}</h2>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{{ doc.specialty }}</p>
+                    </div>
+                </div>
+                <span class="text-[8px] font-black uppercase bg-white border border-slate-200 px-2 py-1 rounded text-slate-400">Live Queue</span>
+            </div>
+
+            <div class="p-0 overflow-y-auto max-h-80">
+                <table class="w-full text-left">
+                    <thead class="sticky top-0 bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.15em] border-b border-slate-100">
+                        <tr>
+                            <th class="py-3 px-5">Reg ID</th>
+                            <th class="py-3 px-5">Patient Name</th>
+                            <th class="py-3 px-5 text-right">Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for appt in confirmed %}
+                            {% if appt.assigned_doctor_id == doc.id %}
+                            <tr class="transition hover:bg-slate-50 group">
+                                <td class="py-3.5 px-5 font-mono text-[11px] text-blue-600 font-black uppercase tracking-tighter">
+                                    {{ appt.patient_profile.reg_number }}
+                                </td>
+                                <td class="py-3.5 px-5 text-xs font-bold text-slate-700 uppercase group-hover:text-blue-700 transition-colors">
+                                    {{ appt.patient_name }}
+                                </td>
+                                <td class="py-3.5 px-5 text-right">
+                                    {% if forloop.first %}
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded bg-green-50 text-green-600 text-[9px] font-black border border-green-200 ring-2 ring-green-100 animate-pulse uppercase tracking-widest">Inside Cabin</span>
+                                    {% else %}
+                                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded border border-slate-200">In Line</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if not confirmed %}
+            <div class="p-10 text-center text-slate-300 italic text-xs">No active queue.</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 max-w-5xl mx-auto overflow-hidden">
+        <div class="p-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-bell text-orange-500 animate-bounce"></i>
+                <h2 class="text-sm font-black text-orange-800 uppercase tracking-widest">Online Booking Requests</h2>
+            </div>
+            <span class="bg-orange-600 text-white text-[9px] font-black px-3 py-1 rounded shadow-sm uppercase tracking-[0.1em]">
+                {{ pending.count }} Actions Required
+            </span>
+        </div>
+        <div class="p-0">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-100">
+                        <tr>
+                            <th class="py-4 px-6">Identity</th>
+                            <th class="py-4 px-6">Mobile Contact</th>
+                            <th class="py-4 px-6">Requested Slot</th>
+                            <th class="py-4 px-6 text-right">Workflow</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for req in pending %}
+                        <tr class="hover:bg-orange-50/30 transition group">
+                            <td class="py-4 px-6">
+                                <p class="text-xs font-black text-slate-800 uppercase tracking-tight">{{ req.patient_name }}</p>
+                                <p class="text-[9px] text-slate-400 font-medium">New Online Submission</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="text-blue-600 font-black text-xs">{{ req.phone }}</span>
+                            </td>
+                            <td class="py-4 px-6 text-[11px] text-slate-500 font-bold uppercase tracking-tighter">
+                                <i class="far fa-calendar-alt mr-1"></i> {{ req.appointment_date|date:"d M Y" }} | 
+                                <i class="far fa-clock ml-1"></i> {{ req.appointment_time|time:"h:i A" }}
+                            </td>
+                            <td class="py-4 px-6 text-right">
+                                <div class="flex items-center justify-end space-x-3">
+                                    <a href="{% url 'pulsehospital:walkin_appointment' %}?phone={{ req.phone }}&name={{ req.patient_name|urlencode }}&address={{ req.address|urlencode }}" 
+                                       class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition font-black text-[10px] uppercase tracking-widest active:scale-95">
+                                        <i class="fas fa-check-circle mr-1.5"></i> Process File
+                                    </a>
+
+                                    <form action="{% url 'pulsehospital:delete_appointment' req.pk %}" method="POST" onsubmit="return confirmDelete(event, this);">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-slate-300 hover:text-red-600 transition-colors p-2">
+                                            <i class="fas fa-trash-alt text-sm"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="py-12 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest italic">All online requests processed.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmDelete(event, form) {
+        event.preventDefault();
+        Swal.fire({
+            title: 'Discard Request?',
+            text: "Are you sure you want to remove this online submission?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, remove it',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'rounded-xl',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
+    function toggleIPDMenu() {
+        const subMenu = document.getElementById('ipdSubMenu');
+        const arrow = document.getElementById('ipdArrow');
+        subMenu.classList.toggle('hidden');
+        arrow.classList.toggle('rotate-180');
+    }
+
+    function toggleOTMenu() {
+        const subMenu = document.getElementById('otSubMenu');
+        const arrow = document.getElementById('otArrow');
+        subMenu.classList.toggle('hidden');
+        arrow.classList.toggle('rotate-180');
+    }
+
+    {% if messages %}
+        {% for message in messages %}
+            Swal.fire({ 
+                title: 'Success', 
+                text: '{{ message }}', 
+                icon: 'success', 
+                timer: 3000,
+                customClass: { popup: 'rounded-xl' }
+            });
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - {{ bill.bill_number }}</title>
+    <style>
+        /* Global Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            padding: 40px; 
+            background-color: #f5f5f5; 
+            color: #333;
+        }
+        
+        .invoice-box { 
+            max-width: 850px; 
+            margin: auto; 
+            background: #fff; 
+            padding: 30px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        /* 🖨️ Print Optimized */
+        @media print { 
+            body { background: white; padding: 0; }
+            .invoice-box { box-shadow: none; border: none; max-width: 100%; width: 100%; }
+            .no-print { display: none; }
+        }
+
+        /* Header Styles */
+        .header-table { width: 100%; border-bottom: 3px solid #1e40af; padding-bottom: 20px; margin-bottom: 25px; }
+        .hospital-logo { width: 85px; height: 85px; border-radius: 50%; object-fit: cover; }
+        .hospital-name { font-size: 26px; font-weight: 900; color: #1e40af; text-transform: uppercase; letter-spacing: -1px; }
+        .hospital-info { font-size: 11px; color: #555; font-weight: 600; line-height: 1.5; }
+        
+        .invoice-badge { 
+            background: #1e40af; 
+            color: white; 
+            padding: 8px 20px; 
+            font-weight: 900; 
+            font-size: 18px; 
+            display: inline-block;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        /* Patient & Summary Info */
+        .info-section { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 30px; 
+            font-size: 13px; 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .info-box p { margin-bottom: 4px; }
+        .label { color: #64748b; font-weight: 800; text-transform: uppercase; font-size: 10px; }
+
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+        th { 
+            background: #1e3a8a; 
+            color: white; 
+            padding: 12px; 
+            text-align: left; 
+            text-transform: uppercase; 
+            font-size: 11px; 
+            letter-spacing: 1px;
+        }
+        td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 13px; font-weight: 600; }
+        .total-row td { 
+            font-size: 20px; 
+            font-weight: 900; 
+            color: #1e40af; 
+            border-top: 2px solid #1e40af; 
+            border-bottom: none;
+            padding-top: 20px;
+        }
+
+        /* Footer */
+        .footer { margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .payment-summary { font-size: 11px; color: #475569; line-height: 1.6; }
+        .signature-box { text-align: center; width: 200px; }
+        .signature-line { border-top: 1px solid #333; padding-top: 8px; font-weight: 800; font-size: 12px; text-transform: uppercase; }
+    </style>
+</head>
+<body onload="window.print()">
+
+    <div class="invoice-box">
+        <table class="header-table">
+            <tr>
+                <td style="border: none; width: 100px; padding: 0;">
+                    <img src="/static/public/logo.jpg" class="hospital-logo" alt="Logo">
+                </td>
+                <td style="border: none; padding-left: 15px;">
+                    <h1 class="hospital-name">Pulse Multispeciality Hospital</h1>
+                    <p class="hospital-info">Bhiwgade Critical Care & Maternity Home</p>
+                    <p class="hospital-info">Main Road, Takiya Ward, Bhandara - 441904</p>
+                    <p class="hospital-info">
+                        Contact: +91 9765211026 | 
+                        Email: pulsemh21@gmail.com
+                    </p>
+                </td>
+                <td style="border: none; text-align: right; vertical-align: top; padding: 0;">
+                    <div class="invoice-badge">INVOICE</div>
+                    <p style="font-size: 12px; font-weight: 800;">No: <span style="color: #1e40af;">{{ bill.bill_number }}</span></p>
+                    <p style="font-size: 11px; font-weight: 700; color: #666;">Date: {{ bill.bill_date|date:"d/m/Y" }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <div class="info-section">
+            <div class="info-box">
+                <p class="label">Patient Information</p>
+                <p style="font-size: 16px; font-weight: 900; color: #0f172a;">{{ bill.patient.name }}</p>
+                <p>Reg ID: <strong>{{ bill.patient.reg_number }}</strong></p>
+                <p>Age/Sex: {{ bill.patient.age }}Y / {{ bill.patient.gender }}</p>
+                <p>Contact: {{ bill.patient.phone }}</p>
+            </div>
+            <div class="info-box" style="text-align: right;">
+                <p class="label">Admission Details</p>
+                <p>Adm ID: <strong>{{ bill.admission.admission_id }}</strong></p>
+                <p>Ward: {{ bill.admission.bed.ward.name }} (Bed {{ bill.admission.bed.bed_number }})</p>
+                <p>Doctor: {{ bill.discharged_by.name|upper }}</p>
+                <p>Adm Date: {{ bill.admission.admission_date|date:"d M Y" }}</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description of Services</th>
+                    <th style="text-align: right;">Amount (INR)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Consultation & Professional Fees</td>
+                    <td style="text-align: right;">₹ {{ bill.consultation_charges }}</td>
+                </tr>
+                <tr>
+                    <td>Ward, Nursing & Bed Charges</td>
+                    <td style="text-align: right;">₹ {{ bill.ward_charges }}</td>
+                </tr>
+                <tr>
+                    <td>Operation Theater & Surgical Fees</td>
+                    <td style="text-align: right;">₹ {{ bill.ot_charges }}</td>
+                </tr>
+                <tr>
+                    <td>Medicines & Pharmaceutical Supplies</td>
+                    <td style="text-align: right;">₹ {{ bill.medicine_charges }}</td>
+                </tr>
+                <tr>
+                    <td>Diagnostic Investigations & Others</td>
+                    <td style="text-align: right;">₹ {{ bill.other_charges }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td style="text-align: right;">Total Paid Amount:</td>
+                    <td style="text-align: right;">₹ {{ bill.total_amount }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <div class="payment-summary">
+                <p class="label" style="margin-bottom: 5px;">Payment Details</p>
+                <p>Mode: <strong>{{ bill.payment_mode }}</strong></p>
+                <p>Transaction ID: <strong>{{ bill.transaction_id }}</strong></p>
+                <p style="margin-top: 10px; font-style: italic; color: #94a3b8; font-size: 10px;">* This is a computer generated invoice and needs no physical signature.</p>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">Authorized Signatory</div>
+                <p style="font-size: 10px; color: #64748b; margin-top: 4px;">Pulse Multispeciality Hospital</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="no-print" style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" style="background: #1e40af; color: white; padding: 10px 25px; border: none; border-radius: 5px; cursor: pointer; font-weight: 800;">
+            Print Again
+        </button>
+    </div>
+</body>
+</html>

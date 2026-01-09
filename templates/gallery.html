@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Hospital Gallery - Pulse Hospital{% endblock %}
+
+{% block content %}
+    <section id="gallery" class="gallery">
+        <div class="container">
+            <h2 class="section-title">Hospital Gallery</h2>
+            <p class="section-subtitle">Take a look at our modern facilities and infrastructure</p>
+            <div class="gallery-grid">
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/imgg1.webp' %}')">
+                    <img src="{% static 'public/gallery/imgg1.webp' %}" alt="Hospital Facility 2" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img1.jpg' %}')">
+                    <img src="{% static 'public/gallery/img1.jpg' %}" alt="Hospital Facility 1" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img2.jpg' %}')">
+                    <img src="{% static 'public/gallery/img2.jpg' %}" alt="Hospital Facility 2" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img3.jpg' %}')">
+                    <img src="{% static 'public/gallery/img3.jpg' %}" alt="Hospital Facility 3" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img4.jpg' %}')">
+                    <img src="{% static 'public/gallery/img4.jpg' %}" alt="Hospital Facility 4" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img5.jpg' %}')">
+                    <img src="{% static 'public/gallery/img5.jpg' %}" alt="Hospital Facility 5" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img6.jpg' %}')">
+                    <img src="{% static 'public/gallery/img6.jpg' %}" alt="Hospital Facility 6" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img7.jpg' %}')">
+                    <img src="{% static 'public/gallery/img7.jpg' %}" alt="Hospital Facility 7" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img8.jpg' %}')">
+                    <img src="{% static 'public/gallery/img8.jpg' %}" alt="Hospital Facility 8" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img9.jpg' %}')">
+                    <img src="{% static 'public/gallery/img9.jpg' %}" alt="Hospital Facility 9" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img10.jpg' %}')">
+                    <img src="{% static 'public/gallery/img10.jpg' %}" alt="Hospital Facility 10" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img11.jpg' %}')">
+                    <img src="{% static 'public/gallery/img11.jpg' %}" alt="Hospital Facility 11" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img12.jpg' %}')">
+                    <img src="{% static 'public/gallery/img12.jpg' %}" alt="Hospital Facility 12" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img13.jpg' %}')">
+                    <img src="{% static 'public/gallery/img13.jpg' %}" alt="Hospital Facility 13" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img14.jpg' %}')">
+                    <img src="{% static 'public/gallery/img14.jpg' %}" alt="Hospital Facility 14" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img15.jpg' %}')">
+                    <img src="{% static 'public/gallery/img15.jpg' %}" alt="Hospital Facility 15" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img16.jpg' %}')">
+                    <img src="{% static 'public/gallery/img16.jpg' %}" alt="Hospital Facility 16" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img17.jpg' %}')">
+                    <img src="{% static 'public/gallery/img17.jpg' %}" alt="Hospital Facility 17" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+                <div class="gallery-item" onclick="openGalleryModal('{% static 'public/gallery/img18.jpg' %}')">
+                    <img src="{% static 'public/gallery/img18.jpg' %}" alt="Hospital Facility 18" loading="lazy">
+                    <div class="gallery-overlay"><span class="gallery-icon">🔍</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="galleryModal" class="modal gallery-modal">
+        <span class="close gallery-close" onclick="closeGalleryModal()">×</span>
+        <div class="gallery-modal-content">
+            <img id="galleryModalImage" src="" alt="Gallery Image">
+        </div>
+    </div>
+{% endblock content %}

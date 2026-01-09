@@ -1,0 +1,132 @@
+<style>
+    @media print {
+        @page { size: A4; margin: 1.2cm; }
+        .no-print { display: none !important; }
+        body { -webkit-print-color-adjust: exact; background-color: white !important; }
+        .content-box { border: none !important; padding: 0 !important; }
+    }
+    
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; line-height: 1.5; color: #1e293b; padding: 0; margin: 0; background-color: #f1f5f9; }
+    #printableArea { background-color: white; width: 210mm; margin: auto; padding: 20px; min-height: 297mm; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+
+    /* Hospital Header */
+    .hospital-header { display: flex; align-items: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 15px; }
+    .hospital-logo { width: 80px; height: 80px; margin-right: 20px; object-fit: contain; }
+    .hospital-info { flex: 1; }
+    .hospital-name { font-size: 26px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; letter-spacing: -0.5px; }
+    .hospital-address { font-size: 11px; color: #475569; margin: 1px 0; font-weight: 600; }
+    
+    .report-title { background: #1e3a8a; color: white; text-align: center; font-weight: 800; text-transform: uppercase; padding: 8px; font-size: 14px; margin-bottom: 20px; border-radius: 4px; }
+    
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 15px; padding: 10px 0; }
+    .data-row { display: flex; margin-bottom: 5px; font-size: 12px; align-items: flex-start; }
+    .label { width: 130px; font-weight: 800; color: #64748b; text-transform: uppercase; font-size: 10px; }
+    .value { flex: 1; font-weight: 700; color: #0f172a; border-bottom: 1px dotted #cbd5e1; }
+
+    .section-head { font-weight: 800; text-transform: uppercase; font-size: 11px; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-top: 15px; margin-bottom: 5px; display: flex; align-items: center; }
+    .section-head::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 10px; }
+    
+    .content-box { padding: 5px 0 15px 0; font-size: 13px; color: #334155; height: auto; min-height: 20px; word-wrap: break-word; text-align: justify; }
+    .footer-sign { margin-top: 80px; display: flex; justify-content: space-between; padding: 0 40px; }
+    .sign-box { text-align: center; border-top: 1.5px solid #1e3a8a; width: 220px; padding-top: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #1e3a8a; }
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<div id="printableArea">
+    <div class="hospital-header">
+        <img src="/static/public/logo.jpg" class="hospital-logo">
+        <div class="hospital-info">
+            <h1 class="hospital-name">Pulse Multispeciality Hospital</h1>
+            <p class="hospital-address">Main Road, Takiya Ward, Bhandara - 441904</p>
+            <p class="hospital-address"><i class="fas fa-phone-alt"></i> Ph: +91 9765102126 | <i class="fas fa-envelope"></i> pulsemh21@gmail.com</p>
+        </div>
+    </div>
+
+    <div class="report-title">Operative Note / Surgery Record</div>
+
+    <div class="info-grid">
+        <div>
+            <div class="data-row">
+                <span class="label">Patient Name:</span> 
+                <span class="value">{% if ot.patient_name %}{{ ot.patient_name|upper }}{% else %}{{ ot.appointment.patient_name|upper }}{% endif %}</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Age / Gender:</span> 
+                <span class="value">{{ ot.patient_age }} Yrs / {{ ot.patient_gender }}</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Surgery Performed:</span> 
+                <span class="value" style="color:#1e3a8a; font-size: 14px;">{{ ot.surgery_name|upper }}</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Anaesthetist:</span> 
+                <span class="value">{{ ot.anaesthetist_name|default:"As per Record" }}</span>
+            </div>
+        </div>
+        <div>
+            <div class="data-row">
+                <span class="label">Surgery Date:</span> 
+                <span class="value">{{ ot.ot_date|date:"d F Y" }}</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Operating Surgeon:</span> 
+                <span class="value">{% if ot.assistant_surgeon %}{{ ot.assistant_surgeon|upper }}{% else %}{{ ot.doctor.name|upper }}{% endif %}</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Anaesthesia:</span> 
+                <span class="value">{{ ot.anaesthesia_type }}</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Registration ID:</span> 
+                <span class="value">{% if ot.reg_id_manual %}{{ ot.reg_id_manual }}{% elif ot.appointment %}{{ ot.appointment.patient_profile.reg_number }}{% else %}N/A{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-head">Intra-Operative Findings</div>
+    <div class="content-box">
+        {{ ot.surgical_findings|linebreaks|default:"Stable Intra-operative period. No immediate complications noted." }}
+    </div>
+
+    <div class="section-head">Procedure Description</div>
+    <div class="content-box">
+        {{ ot.procedure_description|linebreaks|default:"Operative steps recorded as per clinical protocol." }}
+    </div>
+
+    <div class="section-head">Post-Operative Instructions</div>
+    <div class="content-box">
+        {{ ot.post_op_diagnosis|linebreaks|default:"Stable. Shift to recovery room for observation." }}
+    </div>
+
+    <div class="footer-sign">
+        <div class="sign-box">
+            Surgeon's Signature<br>
+            <small style="font-weight: 500; font-style: italic;">Dr. {{ ot.assistant_surgeon|default:ot.doctor.name }}</small>
+        </div>
+        <div class="sign-box">
+            Anaesthetist / OT In-charge Signature
+        </div>
+    </div>
+</div>
+
+<div class="no-print" style="position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; gap: 15px;">
+    <button onclick="window.print()" style="padding: 12px 30px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+        PRINT
+    </button>
+    <a href="{% url 'pulsehospital:ot_management' %}" style="padding: 12px 30px; background: #64748b; color: white; border: none; border-radius: 8px; font-weight: bold; text-decoration: none;">
+        CANCEL / BACK
+    </a>
+</div>
+
+<script>
+    window.onload = function() {
+        // Automatically trigger print dialog in current tab
+        window.print();
+    };
+
+    // Redirect after print/cancel in the SAME tab
+    window.onafterprint = function() {
+        window.location.href = "{% url 'pulsehospital:ot_management' %}";
+    };
+</script>

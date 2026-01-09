@@ -1,0 +1,57 @@
+{% extends 'dashboard_base.html' %}
+
+{% block sidebar_links %}
+<a href="{% url 'pulsehospital:reception_dashboard' %}" class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-800 hover:text-white"><i class="fas fa-desktop mr-3"></i> Overview</a>
+<a href="{% url 'pulsehospital:walkin_appointment' %}" class="flex items-center py-3 px-6 text-slate-300 hover:bg-slate-800 hover:text-white"><i class="fas fa-user-plus mr-3"></i> New Appointment</a>
+<a href="{% url 'pulsehospital:upload_medicine_csv' %}" class="flex items-center py-3 px-6 bg-slate-800 text-blue-400"><i class="fas fa-file-csv mr-3"></i> Upload Medicines</a>
+<a href="{% url 'pulsehospital:daily_report' %}" 
+   class="flex items-center py-3 px-6 {% if request.resolver_match.url_name == 'daily_report' %}bg-slate-800 text-blue-400{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
+    <i class="fas fa-file-invoice mr-3"></i> Daily Report
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-8 bg-slate-900 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-pills mr-3 text-blue-400"></i> Import Medicine Inventory
+            </h2>
+            <p class="text-slate-400 text-sm mt-2 font-medium">Upload a CSV file to update the hospital's pharmacy database.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="p-8 space-y-6">
+            {% csrf_token %}
+            
+            <div class="border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center hover:border-blue-400 transition cursor-pointer bg-gray-50 group">
+                <input type="file" name="csv_file" id="file-upload" class="hidden" accept=".csv" required>
+                <label for="file-upload" class="cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 group-hover:text-blue-500 mb-4 transition"></i>
+                    <p class="text-gray-600 font-bold block" id="file-name">Click to select CSV file</p>
+                    <p class="text-gray-400 text-xs mt-1">Example format: name (header)</p>
+                </label>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h4 class="text-xs font-bold text-blue-700 uppercase mb-2">CSV Format Instructions:</h4>
+                <ul class="text-[11px] text-blue-600 space-y-1 italic">
+                    <li>1. The first row should be the header (e.g., "name").</li>
+                    <li>2. Medicines will be added only if they don't already exist.</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center justify-center">
+                <i class="fas fa-check-circle mr-2"></i> Start Bulk Upload
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Selected file 
+    document.getElementById('file-upload').onchange = function() {
+        document.getElementById('file-name').innerHTML = this.files[0].name;
+        document.getElementById('file-name').classList.add('text-blue-600');
+    };
+</script>
+{% endblock %}

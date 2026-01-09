@@ -1,0 +1,192 @@
+{% extends 'reception/reception_dashboard.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="p-2 sm:p-6 bg-slate-50 min-h-screen flex items-start justify-center">
+    <div class="w-full max-w-4xl"> 
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
+            
+            <div class="p-4 bg-gradient-to-r from-blue-700 to-indigo-800 text-white flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/10 p-2.5 rounded-lg backdrop-blur-md">
+                        <i class="fas fa-calendar-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black tracking-tight uppercase italic">Clinical Appointment</h2>
+                        <p class="text-blue-100 text-[9px] uppercase tracking-[0.2em] font-bold opacity-80">OPD Registration & Queue Management</p>
+                    </div>
+                </div>
+                <div class="hidden md:block text-right">
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full border border-emerald-500/30 font-black uppercase tracking-tighter">
+                        Live System
+                    </span>
+                </div>
+            </div>
+            
+            <form id="appointmentForm" method="POST" class="p-5 sm:p-6 space-y-6">
+                {% csrf_token %}
+                
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 ml-1">Search Patient</label>
+                            <p class="text-[9px] text-slate-400 font-bold leading-tight">Mobile or Registration ID</p>
+                        </div>
+                        <div class="md:col-span-9 relative group">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-slate-400 group-focus-within:text-blue-500 transition-colors text-sm"></i>
+                            </div>
+                            <input type="text" name="phone" id="phone_search" required 
+                                   value="{{ pre_fill.phone|default:'' }}"
+                                   class="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 text-sm"
+                                   placeholder="Type to search existing records...">
+                            
+                            <div id="search_spinner" class="hidden absolute right-3.5 top-2.5 text-blue-500">
+                                <i class="fas fa-spinner fa-spin text-sm"></i>
+                            </div>
+                            <span id="patient_status" class="absolute -bottom-5 left-1 text-[9px] font-black tracking-tight"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Full Name</label>
+                                <input type="text" name="patient_name" required value="{{ pre_fill.name|default:'' }}"
+                                       class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none transition-all font-semibold text-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Referred By</label>
+                                <input type="text" name="referred_by" placeholder="Dr. Name (Optional)" 
+                                       class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none transition-all font-semibold text-sm">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Complete Address</label>
+                            <input type="text" name="address" value="{{ pre_fill.address|default:'' }}"
+                                   class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none transition-all font-semibold text-sm" 
+                                   placeholder="Street, City, State...">
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100 flex flex-col justify-center">
+                        <p class="text-[10px] font-black text-blue-600 uppercase mb-3 tracking-widest flex items-center">
+                            <i class="fas fa-heartbeat mr-2"></i> Clinical Vitals
+                        </p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="bg-white p-2 rounded-lg border border-blue-100 text-center shadow-sm">
+                                <label class="block text-[8px] font-black text-slate-400 uppercase">B.P.</label>
+                                <input type="text" name="bp" placeholder="120/80" class="w-full text-center text-xs font-black outline-none text-blue-700">
+                            </div>
+                            <div class="bg-white p-2 rounded-lg border border-blue-100 text-center shadow-sm">
+                                <label class="block text-[8px] font-black text-slate-400 uppercase">Pulse</label>
+                                <input type="text" name="pulse" placeholder="72" class="w-full text-center text-xs font-black outline-none text-blue-700">
+                            </div>
+                            <div class="bg-white p-2 rounded-lg border border-blue-100 text-center shadow-sm">
+                                <label class="block text-[8px] font-black text-slate-400 uppercase">Sugar</label>
+                                <input type="text" name="sugar" placeholder="110" class="w-full text-center text-xs font-black outline-none text-blue-700">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Patient Age</label>
+                        <div class="relative">
+                            <input type="number" name="age" required class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none transition-all font-bold text-sm">
+                            <span class="absolute right-3 top-2.5 text-[10px] font-bold text-slate-300">YRS</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Gender</label>
+                        <select name="gender" required class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:border-blue-500 outline-none transition-all font-bold appearance-none text-sm cursor-pointer">
+                            <option value="">Choose Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1 text-blue-600">Assign Consultant</label>
+                        <select name="doctor" id="doctor_select" required class="w-full p-2.5 bg-white border-2 border-blue-100 rounded-lg focus:border-blue-500 outline-none transition-all font-black text-blue-700 text-sm cursor-pointer shadow-sm">
+                            <option value="">-- Select Doctor --</option>
+                            {% for doc in doctors %}
+                                <option value="{{ doc.id }}">Dr. {{ doc.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-lg font-black text-xs shadow-lg shadow-blue-200 transition-all transform active:scale-[0.98] uppercase tracking-[0.2em]">
+                        <i class="fas fa-check-circle mr-2"></i> Confirm & Book Appointment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Original logic remains untouched as requested
+    const appointmentForm = document.getElementById('appointmentForm');
+    const phoneInput = document.getElementById('phone_search');
+
+    window.addEventListener('DOMContentLoaded', () => {
+        if (phoneInput.value.length >= 4) { searchPatient(); }
+    });
+
+    appointmentForm.addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        Swal.fire({
+            title: 'Processing Appointment',
+            text: 'Allocating token and updating patient records...',
+            icon: 'info',
+            showConfirmButton: false,
+            timer: 1500,
+            didOpen: () => { Swal.showLoading(); }
+        });
+        setTimeout(() => { appointmentForm.submit(); }, 800);
+    });
+
+    phoneInput.addEventListener('input', searchPatient);
+    document.getElementById('doctor_select').addEventListener('change', searchPatient);
+
+    function searchPatient() {
+        let q = phoneInput.value;
+        if (q.length >= 3) {
+            document.getElementById('search_spinner').classList.remove('hidden');
+            fetch(`/api/search-patient/?q=${encodeURIComponent(q)}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('search_spinner').classList.add('hidden');
+                    let statusSpan = document.getElementById('patient_status');
+                    if (data.exists) {
+                        document.querySelector('input[name="patient_name"]').value = data.name;
+                        document.querySelector('input[name="age"]').value = data.age;
+                        document.querySelector('input[name="address"]').value = data.address;
+                        if (data.gender) { document.querySelector('select[name="gender"]').value = data.gender; }
+                        
+                        statusSpan.innerText = `✅ MATCH FOUND: ${data.name} (${data.reg_number})`;
+                        statusSpan.className = "absolute -bottom-5 left-1 text-[9px] font-black text-green-600 uppercase tracking-tight";
+                    } else {
+                        statusSpan.innerText = `🆕 NEW REGISTRATION DETECTED`;
+                        statusSpan.className = "absolute -bottom-5 left-1 text-[9px] font-black text-blue-500 uppercase tracking-tight italic";
+                    }
+                })
+                .catch(err => { 
+                    document.getElementById('search_spinner').classList.add('hidden');
+                    console.error("Search failed:", err);
+                });
+        } else {
+            document.getElementById('patient_status').innerText = "";
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Access Error{% endblock %}
+
+{% block content %}
+<section style="padding: 100px 0; text-align: center; background: var(--bg-light);">
+    <div class="container" style="max-width: 600px; margin: auto; background: var(--white); padding: 40px; border-radius: 15px; box-shadow: var(--shadow-hover);">
+        
+        <h2 style="color: #e74c3c; font-size: 2.5rem; margin-bottom: 20px;">Access Denied</h2>
+        
+        {% if message %}
+            <p style="font-size: 1.2rem; color: #555;">{{ message }}</p>
+            <p style="margin-top: 15px; color: #333; font-weight: 600;">Please log out and ensure your account is linked to a Doctor profile in the Admin panel.</p>
+        {% else %}
+            <p style="font-size: 1.2rem; color: #555;">An unexpected error occurred. Please contact the administrator.</p>
+        {% endif %}
+
+        <p style="margin-top: 30px;">
+            <a href="{% url 'logout' %}" style="color: #e74c3c; text-decoration: none; font-weight: 600;">Log Out</a>
+            |
+            <a href="{% url 'pulsehospital:home' %}" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Go to Home</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

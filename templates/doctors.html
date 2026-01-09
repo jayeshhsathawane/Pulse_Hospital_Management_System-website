@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Our Doctors - Pulse Hospital{% endblock %}
+
+{% block content %}
+    <section id="doctors" class="doctors">
+        <div class="container">
+            <h2 class="section-title">Our Expert Doctors</h2>
+            <p class="section-subtitle">Experienced Medical Professionals</p>
+            <div class="doctors-grid">
+                <div class="doctor-card">
+                    <div class="doctor-image">
+                        <div class="doctor-placeholder">👨‍⚕️</div>
+                    </div>
+                    <h3>Dr. Rahul Bhiwgade</h3>
+                    <p class="doctor-specialty">MBBS, MD Medicine</p>
+                    <p class="doctor-role">Consultant Physician, Diabetologist & Cardiologist</p>
+                    <button class="view-profile-btn" data-modal-id="doctor1">View Profile</button>
+                </div>
+                
+                <div class="doctor-card">
+                    <div class="doctor-image">
+                        <div class="doctor-placeholder">👩‍⚕️</div>
+                    </div>
+                    <h3>Dr. Anagha Kharwade (Bhiwgade)</h3>
+                    <p class="doctor-specialty">MBBS, MD, MS OBGY</p>
+                    <p class="doctor-role">Consultant Obstetrician & Gynaecologist</p>
+                    <button class="view-profile-btn" data-modal-id="doctor2">View Profile</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="doctor1" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDoctorModal('doctor1')">×</span>
+            <div class="modal-doctor-profile">
+                <div class="modal-doctor-image">
+                    <div class="doctor-placeholder-large">👨‍⚕️</div>
+                </div>
+                <div class="modal-doctor-info">
+                    <h2>Dr. Rahul Bhiwgade</h2>
+                    <p class="modal-specialty">MBBS, MD Medicine</p>
+                    <p class="modal-role">Consultant Physician, Diabetologist & Cardiologist</p>
+                    <p class="modal-reg"><strong>Registration No:</strong> 2018052348</p>
+                    
+                    <h3>Specializations:</h3>
+                    <ul class="specialization-list">
+                        <li>General Medicine</li>
+                        <li>Diabetes Management</li>
+                        <li>Cardiology</li>
+                        <li>Hypertension Treatment</li>
+                        <li>Infectious Diseases</li>
+                    </ul>
+                    
+                    <h3>Services Provided:</h3>
+                    <ul class="services-list">
+                        <li>हृदय विकार व उच्च रक्तदाब</li>
+                        <li>मधुमेह व्यवस्थापन</li>
+                        <li>डेंग्यु, मलेरिया, टायफाईड</li>
+                        <li>वातरोग व मेंदु विकार</li>
+                        <li>दमा व श्वसनाचे आजार</li>
+                        <li>किडणी/लघवी विकार</li>
+                        <li>लिव्हर/कावीळ उपचार</li>
+                    </ul>
+                    
+                    <a href="{% url 'pulsehospital:contact' %}#appointment" class="btn btn-primary" onclick="closeDoctorModal('doctor1')">Book Appointment</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="doctor2" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDoctorModal('doctor2')">×</span>
+            <div class="modal-doctor-profile">
+                <div class="modal-doctor-image">
+                    <div class="doctor-placeholder-large">👩‍⚕️</div>
+                </div>
+                <div class="modal-doctor-info">
+                    <h2>Dr. Anagha Kharwade (Bhiwgade)</h2>
+                    <p class="modal-specialty">MBBS, MD, MS OBGY</p>
+                    <p class="modal-role">Consultant Obstetrician & Gynaecologist</p>
+                    <p class="modal-reg"><strong>Registration No:</strong> 2019042578</p>
+                    
+                    <h3>Specializations:</h3>
+                    <ul class="specialization-list">
+                        <li>Obstetrics & Gynecology</li>
+                        <li>High Risk Pregnancy Management</li>
+                        <li>Infertility Treatment</li>
+                        <li>Gynecological Surgery</li>
+                        <li>PCOD Treatment</li>
+                    </ul>
+                    
+                    <h3>Services Provided:</h3>
+                    <ul class="services-list">
+                        <li>प्रसूतीपूर्व व पश्चात तपासणी</li>
+                        <li>नॉर्मल डिलिव्हरी व सिजेरियन</li>
+                        <li>जटील प्रसूती (High Risk Pregnancy)</li>
+                        <li>वंध्यत्व निवारण चाचणी व उपचार</li>
+                        <li>कुटुंबनियोजन व Cu-T</li>
+                        <li>गर्भाशयाची तपासणी व शस्त्रक्रिया</li>
+                        <li>PCOD व रजोनिवृत्ती उपचार</li>
+                    </ul>
+                    
+                    <a href="{% url 'pulsehospital:contact' %}#appointment" class="btn btn-primary" onclick="closeDoctorModal('doctor2')">Book Appointment</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

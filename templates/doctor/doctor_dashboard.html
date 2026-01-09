@@ -1,0 +1,308 @@
+{% extends 'dashboard_base.html' %}
+{% block sidebar_links %}
+{% with url_name=request.resolver_match.url_name %}
+
+<div class="px-6 py-6 mb-2 border-b border-slate-700/50 bg-slate-900/50">
+    <p class="text-[10px] font-black text-blue-400 uppercase tracking-[0.25em]">Clinical Command</p>
+</div>
+
+<nav class="space-y-1 px-3">
+    <a href="{% url 'pulsehospital:dashboard' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'dashboard' %}
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %}
+            text-slate-400 hover:bg-slate-800 hover:text-blue-300
+       {% endif %}">
+        <i class="fas fa-home mr-3 w-5 text-center text-sm transition-transform group-hover:scale-110"></i> 
+        <span class="font-bold text-xs uppercase tracking-wider">Overview</span>
+    </a>
+
+    <a href="{% url 'pulsehospital:patient_history' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'patient_history' %}
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %}
+            text-slate-400 hover:bg-slate-800 hover:text-blue-300
+       {% endif %}">
+        <i class="fas fa-history mr-3 w-5 text-center text-sm transition-transform group-hover:scale-110"></i> 
+        <span class="font-bold text-xs uppercase tracking-wider">Patient History</span>
+    </a>
+
+    <a href="{% url 'pulsehospital:generate_discharge_card' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'generate_discharge_card' %}
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %}
+            text-slate-400 hover:bg-slate-800 hover:text-blue-300
+       {% endif %}">
+        <i class="fas fa-file-medical-alt mr-3 w-5 text-center text-sm transition-transform group-hover:scale-110"></i> 
+        <span class="font-bold text-xs uppercase tracking-wider">Create Discharge</span>
+    </a>
+
+    <a href="{% url 'pulsehospital:discharge_history' %}" 
+       class="group flex items-center py-3 px-4 rounded-lg transition-all duration-300 
+       {% if url_name == 'discharge_history' %}
+            bg-blue-600 text-white shadow-md shadow-blue-900/20
+       {% else %}
+            text-slate-400 hover:bg-slate-800 hover:text-blue-300
+       {% endif %}">
+        <i class="fas fa-file-invoice mr-3 w-5 text-center text-sm transition-transform group-hover:scale-110"></i> 
+        <span class="font-bold text-xs uppercase tracking-wider">Past Discharges</span>
+    </a>
+
+    <div class="mt-6 pt-4 border-t border-slate-700/50">
+        <button type="button" 
+                onclick="toggleOTMenu()" 
+                class="w-full flex items-center justify-between py-3 px-4 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-all group">
+            <div class="flex items-center">
+                <i class="fas fa-bed-pulse mr-3 w-5 text-center transition-transform group-hover:scale-110 text-cyan-500"></i> 
+                <span class="text-xs font-black uppercase tracking-wider">OT Control</span>
+            </div>
+            <i id="otArrow" class="fas fa-chevron-down text-[10px] transition-transform duration-300 
+               {% if url_name == 'ot_management' or url_name == 'print_operation_note' or url_name == 'ot_scheduling_form' %}rotate-180 text-cyan-400{% endif %}">
+            </i>
+        </button>
+
+        <div id="otSubMenu" class="{% if url_name == 'ot_management' or url_name == 'print_operation_note' or url_name == 'ot_scheduling_form' %}{% else %}hidden{% endif %} mt-1 space-y-1 px-2">
+            <a href="{% url 'pulsehospital:ot_scheduling_form' %}" 
+               class="flex items-center py-2.5 px-4 rounded-md text-[11px] font-bold transition-all 
+               {% if url_name == 'ot_scheduling_form' %} bg-cyan-500/10 text-cyan-400 {% else %} text-slate-500 hover:text-cyan-300 {% endif %}">
+                <i class="fas fa-plus-circle mr-3 opacity-70"></i> Book Surgery
+            </a>
+
+            <a href="{% url 'pulsehospital:ot_management' %}" 
+               class="flex items-center py-2.5 px-4 rounded-md text-[11px] font-bold transition-all 
+               {% if url_name == 'ot_management' %} bg-cyan-500/10 text-cyan-400 {% else %} text-slate-500 hover:text-cyan-300 {% endif %}">
+                <i class="fas fa-calendar-check mr-3 opacity-70"></i> OT Notes
+            </a>
+        </div>
+    </div>
+</nav>
+
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="space-y-6 px-2 sm:px-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-900 border-l-4 border-blue-500 p-5 rounded-lg text-white shadow-sm relative overflow-hidden group">
+            <i class="fas fa-users absolute -right-2 -bottom-2 text-6xl opacity-10 transition-transform group-hover:scale-125"></i>
+            <p class="text-blue-400 text-[10px] font-black uppercase tracking-widest">Active Queue</p>
+            <div class="flex items-baseline space-x-2 mt-2">
+                <h3 class="text-3xl font-bold">{{ appointments.count }}</h3>
+                <span class="text-slate-400 text-xs font-bold uppercase tracking-tighter">Patients Waiting</span>
+            </div>
+        </div>
+        
+        <div class="bg-white border border-slate-200 p-5 rounded-lg flex items-center space-x-4 shadow-sm hover:border-green-400 transition-colors">
+            <div class="h-12 w-12 bg-green-50 text-green-600 rounded-lg flex items-center justify-center text-xl shadow-inner">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[9px] uppercase font-black tracking-widest">Case Load</p>
+                <h3 class="text-xl font-bold text-slate-800 mt-0.5">{{ monthly_patient_count }} <span class="text-[10px] text-slate-400">Total</span></h3>
+            </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 p-5 rounded-lg flex items-center space-x-4 shadow-sm hover:border-amber-400 transition-colors">
+            <div class="h-12 w-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-xl shadow-inner">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[9px] uppercase font-black tracking-widest">Current Cycle</p>
+                <h3 class="text-lg font-bold text-slate-800 mt-0.5 uppercase">{{ current_month_name }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <form method="GET" class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-4 top-3 text-slate-400 text-xs"></i>
+                <input type="text" name="q" placeholder="Patient Name or Registration ID..." 
+                       value="{{ request.GET.q|default:'' }}"
+                       class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium">
+            </div>
+            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200">
+                <span class="text-[9px] font-black text-slate-400 uppercase">Date</span>
+                <input type="date" name="date" value="{{ selected_date }}"
+                       class="bg-transparent text-xs font-bold text-slate-700 outline-none">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition">
+                    Search
+                </button>
+                <a href="{% url 'pulsehospital:dashboard' %}" class="bg-white border border-slate-200 text-slate-500 px-4 py-2 rounded-lg flex items-center hover:bg-slate-100">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 class="text-sm font-black text-slate-800 flex items-center uppercase tracking-tight">
+                <i class="fas fa-list-ul mr-2 text-blue-500"></i> Patient appointment Queue
+            </h2>
+            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase italic tracking-widest">Live Feed</span>
+        </div>
+
+        <div class="hidden md:block">
+            <table class="w-full text-left">
+                <thead class="bg-white text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-4">Identification</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Source/Referral</th>
+                        <th class="px-6 py-4 text-right">Medical Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for appt in appointments %}
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800">{{ appt.patient_name }}</span>
+                                <span class="text-[10px] font-mono font-medium text-blue-600 uppercase">{{ appt.patient_profile.reg_number|default:"--Walk-in--" }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if appt.is_follow_up %}
+                            <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded border border-amber-100 text-[9px] font-black uppercase">Follow-up</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 bg-green-50 text-green-600 rounded border border-green-100 text-[9px] font-black uppercase">New Visit</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if appt.referred_by %}
+                            <span class="text-xs font-semibold text-indigo-600 flex items-center">
+                                <i class="fas fa-user-md mr-1.5 opacity-50"></i> {{ appt.referred_by }}
+                            </span>
+                            {% else %}
+                            <span class="text-[10px] font-medium text-slate-300 italic">Self Referral</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-end space-x-3">
+                                <a href="{% url 'pulsehospital:patient_detail' appt.pk %}" 
+                                   class="bg-blue-600 text-white px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-sm">
+                                   Start Exam
+                                </a>
+                                
+                                <form action="{% url 'pulsehospital:doctor_delete_appointment' appt.pk %}?date={{ selected_date }}&q={{ request.GET.q|default:'' }}" 
+                                      method="POST" class="delete-form">
+                                    {% csrf_token %}
+                                    <button type="button" onclick="handleDelete(this)" class="text-slate-300 hover:text-red-600 transition-colors p-1">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center">
+                            <p class="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No pending appointments</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="md:hidden divide-y divide-slate-100">
+            {% for appt in appointments %}
+            <div class="p-4 space-y-3">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-[9px] font-bold text-blue-500 uppercase">{{ appt.patient_profile.reg_number|default:"New" }}</span>
+                        <h4 class="text-base font-bold text-slate-800">{{ appt.patient_name }}</h4>
+                    </div>
+                    <form action="{% url 'pulsehospital:doctor_delete_appointment' appt.pk %}?date={{ selected_date }}&q={{ request.GET.q|default:'' }}" 
+                          method="POST" class="delete-form">
+                        {% csrf_token %}
+                        <button type="button" onclick="handleDelete(this)" class="text-red-400 p-2">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{% url 'pulsehospital:patient_detail' appt.pk %}" class="flex-1 text-center bg-blue-600 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-md">
+                        Start Examination
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="mt-10">
+        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center">
+            <span class="w-6 h-[2px] bg-green-500 mr-2"></span>
+            Recent Prescriptions
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for done in completed_today %}
+            <div class="bg-white p-4 rounded-lg border border-slate-200 flex items-center justify-between hover:border-blue-300 transition-all shadow-sm">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div class="h-8 w-8 bg-green-50 text-green-600 rounded border border-green-100 flex items-center justify-center font-bold text-[10px]">
+                        {{ forloop.counter }}
+                    </div>
+                    <div class="truncate">
+                        <p class="text-sm font-bold text-slate-800 truncate">{{ done.patient_name }}</p>
+                        <p class="text-[9px] text-slate-400 font-mono">{{ done.patient_profile.reg_number }}</p>
+                    </div>
+                </div>
+                <a href="{% url 'pulsehospital:patient_detail' done.pk %}" class="text-[9px] font-black text-blue-600 uppercase hover:underline shrink-0 ml-2">Review Rx</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleOTMenu() {
+        const subMenu = document.getElementById('otSubMenu');
+        const arrow = document.getElementById('otArrow');
+        if (subMenu && arrow) {
+            const isHidden = subMenu.classList.contains('hidden');
+            if (isHidden) {
+                subMenu.classList.remove('hidden');
+                arrow.classList.add('rotate-180', 'text-cyan-400');
+            } else {
+                subMenu.classList.add('hidden');
+                arrow.classList.remove('rotate-180', 'text-cyan-400');
+            }
+        }
+    }
+
+    function handleDelete(button) {
+        const form = button.closest('.delete-form');
+        Swal.fire({
+            title: 'Discard Patient?',
+            text: "Remove from clinical queue?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, Remove',
+            customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg', cancelButton: 'rounded-lg' }
+        }).then((result) => { if (result.isConfirmed) form.submit(); });
+    }
+
+    {% if messages %}
+        {% for message in messages %}
+            Swal.fire({
+                icon: "{% if message.tags == 'error' %}error{% else %}success{% endif %}",
+                title: "{{ message }}",
+                showConfirmButton: false,
+                timer: 2000,
+                customClass: { popup: 'rounded-xl' }
+            });
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock %}

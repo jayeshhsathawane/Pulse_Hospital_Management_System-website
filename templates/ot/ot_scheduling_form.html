@@ -1,0 +1,168 @@
+{% extends 'doctor/doctor_dashboard.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto pb-10 px-4">
+    <div class="bg-white border border-slate-200 shadow-sm overflow-hidden rounded-lg">
+        
+        <div class="bg-white border-b border-slate-100 p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="h-10 w-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100 shadow-inner">
+                    <i class="fas fa-calendar-plus text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight italic">Surgery Slot Reservation</h2>
+                    <p class="text-slate-400 text-[9px] font-bold tracking-[0.2em] uppercase">Operation Theater Scheduling System</p>
+                </div>
+            </div>
+            <div class="hidden md:block text-right">
+                <span class="text-[9px] font-black text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-100">
+                    OT Control Center Active
+                </span>
+            </div>
+        </div>
+
+        <form method="POST" class="p-5 md:p-6 space-y-5" id="manualOtForm">
+            {% csrf_token %}
+            
+            <div class="space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="w-1 h-3 bg-blue-600 rounded-full"></span>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Patient Identity</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Full Patient Name</label>
+                        <input type="text" name="patient_name" required placeholder="Enter Full Name" 
+                               class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 focus:border-blue-500 focus:bg-white outline-none transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Reg.ID</label>
+                        <input type="text" name="reg_id" placeholder="Enter Patient ID" 
+                               class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-blue-600 focus:border-blue-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Contact No.</label>
+                        <input type="tel" name="patient_mobile" required placeholder="Phone" 
+                               class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 focus:border-blue-500 outline-none text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Age (Yrs)</label>
+                        <input type="number" name="patient_age" required placeholder="Age" 
+                               class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 focus:border-blue-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Gender</label>
+                        <select name="patient_gender" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700 focus:border-blue-500 outline-none text-sm appearance-none cursor-pointer">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                         <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Operating Surgeon</label>
+                         <div class="flex gap-2">
+                             <select id="surgeon_type" class="flex-[1.5] px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-xs outline-none focus:border-blue-500">
+                                 <option value="self">Dr. {{ request.user.doctor.name }} (Self)</option>
+                                 <option value="external">External / Visiting</option>
+                             </select>
+                             <div id="external_surgeon_div" class="hidden flex-[2]">
+                                 <input type="text" name="assistant_surgeon" id="assistant_surgeon" placeholder="Enter Name" 
+                                        class="w-full px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-lg font-bold text-blue-800 focus:border-blue-600 outline-none text-sm shadow-sm">
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <span class="w-1 h-3 bg-indigo-600 rounded-full"></span>
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Surgical Assignment</h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Name of Surgery / Procedure</label>
+                            <input type="text" name="surgery_name" required placeholder="Appendectomy, Hernia, etc." 
+                                   class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-800 focus:border-blue-600 outline-none text-sm shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Anaesthetist Consultant</label>
+                            <input type="text" name="anaesthetist_name" placeholder="Dr. Name" 
+                                   class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-800 focus:border-blue-600 outline-none text-sm shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Surgery Date</label>
+                                <input type="date" name="ot_date" required class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-800 focus:border-blue-600 outline-none text-sm shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Assigned Slot</label>
+                                <input type="time" name="ot_time" required class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg font-bold text-blue-600 focus:border-blue-600 outline-none text-sm shadow-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Anaesthesia Mode</label>
+                            <select name="anaesthesia" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-800 focus:border-blue-600 outline-none text-sm shadow-sm">
+                                <option value="Spinal">Spinal Anaesthesia</option>
+                                <option value="General">General Anaesthesia (GA)</option>
+                                <option value="Local">Local Anaesthesia (LA)</option>
+                                <option value="Epidural">Epidural</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Pre-Op Instructions / Diagnosis</label>
+                    <textarea name="notes" rows="2" placeholder="NBM, Consent, Blood Cross-match etc." 
+                              class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-700 focus:border-blue-600 outline-none text-sm shadow-sm"></textarea>
+                </div>
+            </div>
+
+            <div class="pt-4 flex items-center gap-3">
+                <a href="{% url 'pulsehospital:ot_management' %}" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-lg font-black text-[10px] uppercase text-center border border-slate-200 hover:bg-slate-200 transition-all">
+                    Cancel
+                </a>
+                <button type="submit" class="flex-[3] py-3 bg-blue-600 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center">
+                    <i class="fas fa-check-double mr-2"></i> Confirm Surgical Slot
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Surgeon Type Toggle Logic
+    document.getElementById('surgeon_type').addEventListener('change', function() {
+        const externalDiv = document.getElementById('external_surgeon_div');
+        const externalInput = document.getElementById('assistant_surgeon');
+        
+        if (this.value === 'external') {
+            externalDiv.classList.remove('hidden');
+            externalInput.setAttribute('required', 'true');
+        } else {
+            externalDiv.classList.add('hidden');
+            externalInput.removeAttribute('required');
+            externalInput.value = ""; 
+        }
+    });
+
+    // Sidebar Toggle Logic
+    function toggleOTMenu() {
+        const subMenu = document.getElementById('otSubMenu');
+        const arrow = document.getElementById('otArrow');
+        if (subMenu && arrow) {
+            subMenu.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+    }
+</script>
+{% endblock %}

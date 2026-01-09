@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Print Discharge - {{ data.profile.name }}</title>
+    <style>
+        /* Exact same styling as Doctor's print format */
+        @media print {
+            @page { margin: 0; }
+            body { margin: 0; padding: 0; background: white; }
+            .no-print { display: none; }
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px 60px; color: black; }
+        .header-title { text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-top: 150px; margin-bottom: 20px; }
+        .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; line-height: 1.8; }
+        .table-investigation { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid black; }
+        .table-investigation td { border: 1px solid black; padding: 8px; font-size: 14px; }
+        .section-title { text-decoration: underline; font-weight: bold; margin-bottom: 10px; display: block; }
+        .content-box { margin-bottom: 20px; white-space: pre-line; font-size: 15px; }
+        .footer-sig { margin-top: 80px; text-align: right; }
+    </style>
+</head>
+<body onload="window.print()">
+
+    <div class="header-title">
+        <h2 style="margin: 0; font-size: 24px;">DISCHARGE CARD</h2>
+    </div>
+
+    <div class="info-grid">
+        <div>
+            <p><strong>Name of Patient:</strong> {{ data.profile.name }}</p>
+            <p><strong>Age / Gender:</strong> {{ data.profile.age }}Y / {{ data.profile.gender }}</p>
+            <p><strong>Address:</strong> {{ data.profile.address|default:"--" }}</p>
+            <p><strong>Date of Admission:</strong> {{ data.record.date_of_admission|date:"d M Y h:i A" }}</p>
+        </div>
+        <div style="text-align: right;">
+            <p><strong>Reg ID:</strong> {{ data.profile.reg_number }}</p>
+            <p><strong>Consultant:</strong>  {{ doctor_full_name|upper }}</p>
+            <p><strong>Discharge Date:</strong> {{ data.record.discharge_date|date:"d M Y"|default:current_time|date:"d M Y" }}</p>
+        </div>
+    </div>
+
+    <h4 class="section-title">KEY INVESTIGATIONS:</h4>
+    <table class="table-investigation">
+        <tr>
+            <td><strong>Hb:</strong> {{ data.record.hb|default:"--" }} gm/dl</td>
+            <td><strong>TLC:</strong> {{ data.record.tlc|default:"--" }}</td>
+            <td><strong>Platelets:</strong> {{ data.record.platelets|default:"--" }}</td>
+        </tr>
+        <tr>
+            <td><strong>BUL:</strong> {{ data.record.bul|default:"--" }}</td>
+            <td><strong>Creatinine:</strong> {{ data.record.creatinine|default:"--" }}</td>
+            <td><strong>Status:</strong> Discharged</td>
+        </tr>
+    </table>
+
+    <p><strong>TREATMENT GIVEN (IN-HOSPITAL):</strong></p>
+    <div class="content-box">{{ data.record.treatment_given|default:"As per clinical protocol" }}</div>
+
+    <p style="background: #f0f0f0; padding: 5px;"><strong>TREATMENT ADVISED ON DISCHARGE:</strong></p>
+    <div class="content-box" style="font-weight: bold; font-size: 16px;">{{ data.record.treatment_advised }}</div>
+
+    <p><strong>FOLLOW UP:</strong> {{ data.record.follow_up|default:"Visit after 7 days" }}</p>
+
+    <div class="footer-sig">
+        <p style="border-top: 1px solid black; display: inline-block; padding-top: 5px; width: 220px; text-align: center;">
+            Doctor's Signature <br> 
+            <small> {{ doctor_full_name|upper }}</small>
+        </p>
+    </div>
+
+    <div class="no-print" style="margin-top: 20px; text-align: center;">
+        <button onclick="window.history.back()" style="padding: 10px 20px; cursor: pointer;">Go Back</button>
+        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; background: green; color: white; border: none;">Print Again</button>
+    </div>
+
+</body>
+</html>

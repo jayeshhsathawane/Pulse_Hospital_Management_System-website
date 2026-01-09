@@ -1,0 +1,154 @@
+{% extends 'doctor/doctor_dashboard.html' %}
+
+{% block content %}
+<div class="space-y-6 px-2 sm:px-4">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-5">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
+            <div>
+                <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight italic">Discharge Archives</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Access and re-generate medical summaries</p>
+            </div>
+            
+            <div class="flex flex-col md:flex-row items-end gap-3 w-full lg:w-auto">
+                <form method="GET" action="." class="flex items-center gap-2 w-full md:w-auto">
+                    <div class="flex flex-col space-y-1">
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Filter by Discharge Date</label>
+                        <div class="flex items-center gap-2">
+                            <input type="date" name="date_filter" value="{{ request.GET.date_filter }}" 
+                                   class="w-full md:w-40 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-blue-500 transition-all">
+                            <button type="submit" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black transition shadow-sm">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                    {% if request.GET.date_filter %}
+                    <a href="{% url 'pulsehospital:discharge_history' %}" class="text-red-500 text-[10px] font-black uppercase hover:underline mt-4">Clear</a>
+                    {% endif %}
+                </form>
+
+                <div class="flex flex-col space-y-1 w-full md:w-64">
+                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Search in List (Name/ID)</label>
+                    <div class="relative group">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-300 group-focus-within:text-blue-500 transition-colors text-sm"></i>
+                        <input type="text" id="historySearchInput" placeholder="Type Name or ID..." 
+                               class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-blue-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 class="text-sm font-black text-slate-800 uppercase tracking-tight italic">
+                <i class="fas fa-file-invoice mr-2 text-blue-500"></i> 
+                {% if request.GET.date_filter %} Records for {{ request.GET.date_filter|date:"d M Y" }} {% else %} Recent Clinical Summaries {% endif %}
+            </h2>
+            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest italic">
+                {% if request.GET.date_filter %} Date Filter Applied {% else %} Live Archive {% endif %}
+            </span>
+        </div>
+
+        <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="historyTable">
+                <thead class="bg-white text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
+                    <tr>
+                        <th class="px-8 py-5">Discharge Date</th>
+                        <th class="px-8 py-5">Patient Profile</th>
+                        <th class="px-8 py-5 text-center">Consultant</th>
+                        <th class="px-8 py-5 text-right">Medical Document</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for record in discharges %}
+                    <tr class="hover:bg-blue-50/30 transition-colors group discharge-row">
+                        <td class="px-8 py-4 text-xs text-slate-600 font-bold whitespace-nowrap">
+                            <i class="far fa-calendar-check mr-2 text-blue-400/50"></i>{{ record.date_of_discharge|date:"d M Y" }}
+                        </td>
+                        <td class="px-8 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800 patient-name group-hover:text-blue-600 transition-colors uppercase leading-tight">{{ record.patient.name }}</span>
+                                <span class="font-mono text-[10px] text-blue-500 font-black reg-id uppercase mt-1">ID: {{ record.patient.reg_number }}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-4 text-center">
+                            <span class="text-[10px] font-black text-slate-500 uppercase bg-slate-100 px-2 py-1 rounded"> {{ record.doctor_name }}</span>
+                        </td>
+                        <td class="px-8 py-4 text-right">
+                            <a href="{% url 'pulsehospital:generate_discharge_card' %}?reg_id={{ record.patient.reg_number }}" 
+                               class="bg-blue-50 text-blue-600 px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm inline-flex items-center">
+                                <i class="fas fa-print mr-2 text-xs"></i> Re-Print Summary
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-8 py-20 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-calendar-times text-4xl text-slate-200 mb-3"></i>
+                                <p class="text-slate-400 font-black uppercase tracking-widest text-xs">No discharges found for this date.</p>
+                                <a href="{% url 'pulsehospital:discharge_history' %}" class="mt-4 text-blue-600 text-[10px] font-black uppercase underline">View All Records</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="md:hidden divide-y divide-slate-100">
+            {% for record in discharges %}
+            <div class="p-5 space-y-4 discharge-row">
+                <div class="flex justify-between items-start">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest reg-id bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{{ record.patient.reg_number }}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase">{{ record.date_of_discharge|date:"d M Y" }}</p>
+                        </div>
+                        <h4 class="text-base font-black text-slate-800 tracking-tight patient-name uppercase">{{ record.patient.name }}</h4>
+                        <p class="text-[10px] text-slate-500 uppercase font-black italic tracking-tighter">Consultant:  {{ record.doctor_name }}</p>
+                    </div>
+                </div>
+                <a href="{% url 'pulsehospital:generate_discharge_card' %}?reg_id={{ record.patient.reg_number }}" 
+                   class="block w-full text-center bg-blue-50 text-blue-600 py-3.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] active:bg-blue-600 active:text-white transition shadow-sm border border-blue-100">
+                    <i class="fas fa-print mr-2 text-xs"></i> Re-Print Document
+                </a>
+            </div>
+            {% empty %}
+            <div class="p-12 text-center">
+                <i class="fas fa-search text-3xl text-slate-100 mb-2"></i>
+                <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">Zero history records found for the selected date.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    /**
+     * 🚀 Instant JS Filter for Search Box (Name/ID)
+     */
+    document.getElementById('historySearchInput').addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll('.discharge-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            let nameNode = row.querySelector('.patient-name');
+            let idNode = row.querySelector('.reg-id');
+            
+            if (nameNode && idNode) {
+                let name = nameNode.textContent.toLowerCase();
+                let regId = idNode.textContent.toLowerCase();
+
+                if (name.includes(filter) || regId.includes(filter)) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
