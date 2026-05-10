@@ -18,7 +18,7 @@ admin.site.index_title = "Welcome to Pulse Hospital Management System"
 
 
 urlpatterns = [
-    path('create-admin/', views.create_admin)
+    path('create-admin/', views.create_admin),
     path('pulse-control/', admin.site.urls),
     path('accounts/login/', auth_views.LoginView.as_view(next_page='/dashboard-redirect/'), name='login'),
     path('accounts/', include('django.contrib.auth.urls')),
