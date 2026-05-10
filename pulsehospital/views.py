@@ -23,15 +23,9 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 
 from django.contrib.auth.models import User
 
-def create_admin(request):
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser(
-            username='admin',
-            email='pulsemh21@gmail.com',
-            password='Hospital@2710'
-        )
-        return HttpResponse("Superuser created")
-    return HttpResponse("Already exists")
+def delete_admin(request):
+    User.objects.filter(username='pulsemh21@gmail.com').delete()
+    return HttpResponse("Admin deleted")
 
 # --- 1. LOGIN REDIRECT LOGIC ---
 @login_required
