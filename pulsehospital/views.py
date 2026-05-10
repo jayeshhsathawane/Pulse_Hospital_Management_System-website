@@ -13,7 +13,6 @@ from .models import (
     Bed, IPD_DailyRecord,OTBooking
 )
 from .forms import AppointmentForm
-from django.core import serializers
 from django.utils import timezone
 from django.db.models import Q
 from .models import Bill, IPD_Admission, Doctor 
@@ -21,14 +20,6 @@ from django.utils import timezone
 import time
 from django.views.decorators.clickjacking import xframe_options_exempt
 
-from django.contrib.auth.models import User
-def fix_admin(request):
-    user = User.objects.filter(username='admin').first()
-    if user:
-        user.set_password('admin123')   # 🔥 password re-hash karega
-        user.save()
-        return HttpResponse("Password reset done")
-    return HttpResponse("User not found")
 
 # --- 1. LOGIN REDIRECT LOGIC ---
 @login_required
