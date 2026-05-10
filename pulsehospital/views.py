@@ -22,10 +22,13 @@ import time
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 from django.contrib.auth.models import User
-
-def delete_admin(request):
-    User.objects.filter(username='pulsemh21@gmail.com').delete()
-    return HttpResponse("Admin deleted")
+def fix_admin(request):
+    user = User.objects.filter(username='admin').first()
+    if user:
+        user.set_password('admin123')   # 🔥 password re-hash karega
+        user.save()
+        return HttpResponse("Password reset done")
+    return HttpResponse("User not found")
 
 # --- 1. LOGIN REDIRECT LOGIC ---
 @login_required
