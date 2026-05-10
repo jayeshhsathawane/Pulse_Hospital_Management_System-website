@@ -21,6 +21,17 @@ from django.utils import timezone
 import time
 from django.views.decorators.clickjacking import xframe_options_exempt
 
+from django.contrib.auth.models import User
+
+def create_admin(request):
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser(
+            username='admin',
+            email='pulsemh21@gmail.com',
+            password='Hospital@2710'
+        )
+        return HttpResponse("Superuser created")
+    return HttpResponse("Already exists")
 
 # --- 1. LOGIN REDIRECT LOGIC ---
 @login_required
