@@ -6,6 +6,6 @@ whitenoise
 
 psycopg2-binary
 dj-database-url
-
+django-import-export
 python-dotenv
 
