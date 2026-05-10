@@ -70,18 +70,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pulsesite.wsgi.application'
 
+import dj_database_url
 
-# Database
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pulse_db',        # db name
-        'USER': 'root',            # XAMPP  default user
-        'PASSWORD': '',            # XAMPP password is empty
-        'HOST': '127.0.0.1',       # Localhost
-        'PORT': '3306',            # MySQL port
-    }
+    'default': dj_database_url.config(default='')
 }
+# # Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'pulse_db',        # db name
+#         'USER': 'root',            # XAMPP  default user
+#         'PASSWORD': '',            # XAMPP password is empty
+#         'HOST': '127.0.0.1',       # Localhost
+#         'PORT': '3306',            # MySQL port
+#     }
+# }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
