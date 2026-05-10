@@ -6,7 +6,7 @@ app_name = 'pulsehospital'
 
 urlpatterns = [
     path('stafflogin/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-      path('create-admin/', views.create_admin),
+    path('delete-admin/', views.delete_admin),
     # --- Website Main Pages ---
     path('', views.home, name='home'),
     path('services/', views.services, name='services'),
