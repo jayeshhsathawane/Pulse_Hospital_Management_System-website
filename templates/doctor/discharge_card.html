@@ -1,569 +1,350 @@
-{% extends 'doctor/doctor_dashboard.html' %} {% block content %}
+{% extends 'doctor/doctor_dashboard.html' %} 
+{% block content %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
 <style>
-  /* 🖨️ Professional Letterhead Print optimizations */
+  /* Professional Print Styles remain same */
   @media print {
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    body,
-    html {
-      background-color: white !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .no-print,
-    aside,
-    header,
-    nav,
-    button {
-      display: none !important;
-    }
-    #printableSummary {
-      display: block !important;
-      position: absolute;
-      left: 0;
-      top: 160px !important;
-      width: 100%;
-      background-color: white !important;
-      visibility: visible;
-      padding: 0 40px !important;
-      font-size: 12px;
-    }
-    #printableSummary *,
-    table,
-    tr,
-    td,
-    th {
-      background-color: white !important;
-      color: black !important;
-      border-color: #000 !important;
-    }
-    .section-box {
-      border-bottom: 1px solid #eee;
-      padding: 5px 0;
-      margin-bottom: 5px;
-    }
+    @page { size: A4; margin: 10mm; }
+    body, html { background-color: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .no-print, aside, header, nav, button, .action-col { display: none !important; }
+    #printableSummary { display: block !important; width: 100%; font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; }
+    .print-table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 10px; table-layout: fixed; border: 1px solid black !important; }
+    .print-table th, .print-table td { border: 1px solid black !important; padding: 5px; text-align: left; font-size: 10pt; vertical-align: top; }
+    .print-table th { background-color: #f0f0f0 !important; font-weight: bold; text-transform: uppercase; font-size: 9pt; }
+    .col-sr { width: 5%; text-align: center; }
+    .col-name { width: 35%; }
+    .col-freq { width: 20%; font-weight: bold; text-align: center; }
+    .col-dose { width: 25%; }
+    .col-dur { width: 15%; text-align: center; }
+    .section-header { font-weight: bold; text-decoration: underline; margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; font-size: 12px; }
+    input, textarea { border: none !important; resize: none; padding: 0; background: transparent; }
   }
-  #printableSummary {
-    display: none;
-  }
-  .input-label {
-    font-size: 9px;
-    font-weight: 800;
-    color: #64748b;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-    display: block;
-    letter-spacing: 0.05em;
-  }
+  #printableSummary { display: none; }
+  .input-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block; letter-spacing: 0.05em; }
+  .ui-autocomplete { background: white !important; border-radius: 8px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important; max-height: 250px !important; overflow-y: auto !important; z-index: 999999 !important; border: 1px solid #e2e8f0 !important; padding: 0 !important; }
+  .ui-menu-item { border-bottom: 1px solid #f8fafc; }
+  .ui-state-active { background: #f0f9ff !important; border: none !important; color: #0369a1 !important; margin: 0 !important; }
+  .rx-table th { background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+  .rx-table td { padding: 4px; border-bottom: 1px solid #f8fafc; vertical-align: top; }
+  .med-search, .med-note, .med-freq, .med-dose, .med-timing, .med-dur-val, .med-dur-type { width: 100%; border: 1px solid #cbd5e1; padding: 6px; font-size: 12px; font-weight: 600; border-radius: 4px; outline: none; transition: all 0.2s; }
 </style>
 
-<div class="max-w-5xl mx-auto space-y-6 px-2 sm:px-4 pb-10">
-  <div
-    class="no-print bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end"
-  >
+<div class="w-full max-w-[95%] mx-auto space-y-5 px-2 sm:px-4 pb-10">
+  
+  <div class="no-print bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
     <div class="w-full relative group">
-      <label class="input-label ml-1">Patient Search (Registration ID)</label>
+      <label class="input-label ml-1">Search Patient (Registration ID or IPD ID)</label>
       <div class="relative">
-        <i
-          class="fas fa-id-card absolute left-4 top-3 text-slate-300 group-focus-within:text-blue-500 transition-colors"
-        ></i>
-        <input
-          type="text"
-          id="reg_search"
-          value="{{ reg_id|default:'' }}"
-          class="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-semibold transition-all"
-          placeholder="e.g. MH/BHU/NHO740"
-        />
+        <i class="fas fa-search absolute left-4 top-3 text-slate-400"></i>
+        <input type="text" id="reg_search" value="{{ reg_id|default:'' }}" 
+               class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-bold" 
+               placeholder="Example: MED-2026-002 or IPD/MED-2026-002/1" />
       </div>
     </div>
-    <button
-      onclick="window.location.href='?reg_id=' + document.getElementById('reg_search').value"
-      class="w-full sm:w-auto bg-blue-600 text-white px-10 py-2.5 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 active:scale-95"
-    >
+    <button onclick="executeSearch()" 
+            class="w-full sm:w-auto bg-slate-800 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-black transition shadow-md">
       SEARCH
     </button>
   </div>
 
-  <form method="POST" id="dischargeForm" class="no-print space-y-6">
+  {% if data %}
+  <form method="POST" id="dischargeForm" class="no-print space-y-6" onsubmit="prepareSave()">
     {% csrf_token %}
     <input type="hidden" name="patient_id" value="{{ data.profile.id }}" />
+    <input type="hidden" name="treatment_given_json" id="hosp_json">
+    <input type="hidden" name="treatment_advised_json" id="home_json">
 
-    <div class="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
-      <div
-        class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6"
-      >
-        <h2
-          class="text-sm font-black text-slate-800 uppercase tracking-widest italic flex items-center"
-        >
-          <i class="fas fa-file-medical-alt mr-2 text-blue-500"></i> Hospital
-          Discharge Summary
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+        <h2 class="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center">
+          <i class="fas fa-file-medical text-blue-600 mr-2 text-xl"></i> Discharge Summary
         </h2>
-        <span
-          class="bg-blue-50 text-blue-600 px-3 py-1 rounded text-[9px] font-black uppercase tracking-widest"
-          >Clinical Draft</span
-        >
+        <span class="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-md text-[10px] font-black uppercase border border-emerald-100">
+            {% if data.is_saved %} Saved {% else %} New Draft {% endif %}
+        </span>
       </div>
 
-      <div
-        class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-slate-50 p-5 rounded-lg border border-slate-100"
-      >
-        <div class="space-y-3">
-          <div>
-            <span class="input-label">Patient Name</span
-            ><span class="font-bold text-sm text-slate-800 uppercase"
-              >{{ data.profile.name|default:"--" }}</span
-            >
-          </div>
-          <div>
-            <span class="input-label">Hospital Reg. No.</span
-            ><span class="text-blue-700 font-black text-xs font-mono"
-              >MH/BHU/NHO740</span
-            >
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 bg-slate-50 p-5 rounded-lg border border-slate-200">
+        <div class="space-y-2">
+          <div><span class="input-label">Patient Name</span><span class="font-black text-base text-slate-800 uppercase">{{ data.profile.name|default:"--" }}</span></div>
+          <div class="flex gap-2">
+              <div><span class="input-label">Reg ID</span><span class="text-blue-600 font-bold text-xs font-mono">{{ data.profile.reg_number }}</span></div>
+              {% if data.admission %}
+              <div><span class="input-label">Admission ID</span><span class="text-rose-600 font-bold text-xs font-mono">{{ data.admission.admission_id }}</span></div>
+              {% endif %}
           </div>
         </div>
-        <div class="space-y-3">
+        <div class="space-y-2">
+          <div><span class="input-label">Age / Gender</span><span class="font-bold text-sm text-slate-700">{{ data.profile.age|default:"--" }}Y / {{ data.profile.gender|default:"--" }}</span></div>
           <div>
-            <span class="input-label">Age / Gender</span
-            ><span class="font-bold text-sm text-slate-800"
-              >{{ data.profile.age|default:"--" }}Y / {{ data.profile.gender|default:"--" }}</span
-            >
-          </div>
-          <div>
-            <span class="input-label">Date of Admission & Time </span>
-            <input
-              type="datetime-local"
-              name="adm_date"
-              value="{{ data.record.date_of_admission|date:'Y-m-d\TH:i' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-black bg-slate-100 text-slate-600 focus:border-blue-500 outline-none"
-              readonly
-            />
+            <span class="input-label">Admission Date</span>
+            <input type="datetime-local" name="adm_date" value="{{ data.record.date_of_admission|date:'Y-m-d\TH:i'|default:data.admission.admission_date|date:'Y-m-d\TH:i' }}" class="w-full p-1.5 border border-slate-300 rounded bg-white text-xs font-bold" />
           </div>
         </div>
-        <div class="space-y-3 text-right">
-          <div>
-            <span class="input-label">Consultant Doctor</span
-            ><span class="font-bold text-sm uppercase text-slate-700"
-              >{{ doctor_full_name|upper }}</span
-            >
-          </div>
-          <div>
-            <span class="input-label">Discharge Date</span
-            ><span class="font-black text-sm text-blue-600"
-              >{{ current_time|date:"d M Y" }}</span
-            >
-          </div>
+        <div class="space-y-2 text-right">
+          <div><span class="input-label">Consultant</span><span class="font-bold text-sm uppercase text-slate-700"> {{ doctor_full_name|upper }}</span></div>
+          <div><span class="input-label">Discharge Date & Time</span><span class="font-black text-sm text-red-500">{{ discharge_date|date:"d M Y, h:i A" }} </span></div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
         <div>
           <label class="input-label">Presenting Complaints</label>
-          <textarea
-            name="presenting_complaints"
-            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
-            rows="2"
-            placeholder="Patient's primary issues..."
-          >
-{{ data.last_visit.symptoms|default:'' }}</textarea
-          >
+          <textarea name="presenting_complaints" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none shadow-sm h-20">{{ data.record.presenting_complaints|default:data.last_visit.symptoms }}</textarea>
         </div>
         <div>
           <label class="input-label">Final Diagnosis</label>
-          <textarea
-            name="final_diagnosis"
-            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
-            rows="2"
-            placeholder="Confirmed clinical diagnosis..."
-          >
-{{ data.last_visit.diagnosis|default:'' }}</textarea
-          >
+          <textarea name="final_diagnosis" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none shadow-sm h-20">{{ data.record.final_diagnosis|default:data.last_visit.diagnosis }}</textarea>
         </div>
       </div>
 
-      <div class="bg-blue-50/30 p-5 rounded-lg border border-blue-100 mb-8">
-        <h3
-          class="font-black text-blue-700 text-[10px] uppercase mb-4 flex items-center gap-2 tracking-widest"
-        >
-          <i class="fas fa-microscope text-xs"></i> Key Laboratory
-          Investigations
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div>
-            <label class="input-label">Hb (gm/dl)</label
-            ><input
-              type="text"
-              name="hb"
-              value="{{ data.record.hb|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">TLC Count</label
-            ><input
-              type="text"
-              name="tlc"
-              value="{{ data.record.tlc|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">Platelets</label
-            ><input
-              type="text"
-              name="platelets"
-              value="{{ data.record.platelets|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">LFT (TB/DB/IB)</label
-            ><input
-              type="text"
-              name="lft"
-              value="{{ data.record.lft|default:'' }}"
-              placeholder="1.0/0.4/0.6"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">BUL</label
-            ><input
-              type="text"
-              name="bul"
-              value="{{ data.record.bul|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">Creatinine</label
-            ><input
-              type="text"
-              name="creatinine"
-              value="{{ data.record.creatinine|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
+      <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100 mb-6">
+        <h3 class="font-bold text-blue-700 text-[10px] uppercase mb-3 flex items-center gap-2"><i class="fas fa-flask"></i> Key Investigations</h3>
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+           <div><label class="input-label">Hb</label><input type="text" name="hb" value="{{ data.record.hb }}" class="med-search"></div>
+           <div><label class="input-label">TLC</label><input type="text" name="tlc" value="{{ data.record.tlc }}" class="med-search"></div>
+           <div><label class="input-label">Platelets</label><input type="text" name="platelets" value="{{ data.record.platelets }}" class="med-search"></div>
+           <div><label class="input-label">Creatinine</label><input type="text" name="creatinine" value="{{ data.record.creatinine }}" class="med-search"></div>
+           <div><label class="input-label">BUL</label><input type="text" name="bul" value="{{ data.record.bul }}" class="med-search"></div>
+           <div><label class="input-label">LFT</label><input type="text" name="lft" value="{{ data.record.lft }}" class="med-search"></div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div>
-            <label class="input-label">X-Ray Findings</label
-            ><input
-              type="text"
-              name="xray"
-              value="{{ data.record.xray|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">CT Scan Report</label
-            ><input
-              type="text"
-              name="ct_scan"
-              value="{{ data.record.ct_scan|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label class="input-label">MRI Findings</label
-            ><input
-              type="text"
-              name="mri"
-              value="{{ data.record.mri|default:'' }}"
-              class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold focus:border-blue-500 outline-none"
-            />
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div><label class="input-label">X-Ray</label><input type="text" name="xray" value="{{ data.record.xray }}" class="med-search"></div>
+            <div><label class="input-label">CT Scan</label><input type="text" name="ct_scan" value="{{ data.record.ct_scan }}" class="med-search"></div>
+            <div><label class="input-label">MRI</label><input type="text" name="mri" value="{{ data.record.mri }}" class="med-search"></div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <label class="input-label text-blue-600"
-            >Gen. Condition on Admission</label
-          >
-          <textarea
-            name="cond_admission"
-            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
-            rows="1"
-            placeholder="Stable/Critical/etc..."
-          ></textarea>
-        </div>
-        <div>
-          <label class="input-label text-emerald-600"
-            >Gen. Condition on Discharge</label
-          >
-          <textarea
-            name="cond_discharge"
-            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
-            rows="1"
-            placeholder="Improving/Stable..."
-          ></textarea>
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+        <div><label class="input-label text-blue-600">Condition on Admission</label><textarea name="cond_admission" class="w-full p-2 border border-slate-200 rounded text-sm focus:border-blue-500 outline-none" rows="1">{{ data.record.condition_on_admission }}</textarea></div>
+        <div><label class="input-label text-emerald-600">Condition on Discharge</label><textarea name="cond_discharge" class="w-full p-2 border border-slate-200 rounded text-sm focus:border-blue-500 outline-none" rows="1">{{ data.record.condition_on_discharge }}</textarea></div>
       </div>
 
-      <div class="space-y-6">
-        <div>
-          <label class="input-label">In-Hospital Treatment Summary</label>
-          <textarea
-            name="treatment_given"
-            class="w-full p-3 border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
-            rows="2"
-            placeholder="Details of medicines/procedures given in ward..."
-          >
-{{ data.record.treatment_given|default:'' }}</textarea
-          >
+      <div class="mb-8">
+        <div class="flex justify-between items-end mb-2">
+            <label class="input-label text-slate-600 text-xs flex items-center gap-2"><i class="fas fa-procedures"></i> In-Hospital Treatment Given</label>
+            <button type="button" onclick="addMedRow('hospitalTable')" class="text-[10px] font-bold bg-slate-100 px-3 py-1 rounded text-slate-600 hover:bg-slate-200 border border-slate-200">+ Add Row</button>
         </div>
-        <div>
-          <label class="input-label text-blue-800"
-            >Home Care Treatment Advised (Rx)</label
-          >
-          <textarea
-            name="treatment_advised"
-            class="w-full p-4 border border-blue-200 bg-blue-50/20 rounded-lg text-sm font-black focus:border-blue-500 outline-none shadow-inner"
-            rows="4"
-            placeholder="1. Medicine A ... 2. Medicine B ..."
-          >
-{{ data.record.treatment_advised|default:'' }}</textarea
-          >
+        <table class="w-full rx-table" id="hospitalTable">
+            <thead><tr><th width="30%">Medicine Name</th><th width="20%">Frequency</th><th width="15%">Dose</th><th width="20%">Timing</th><th width="10%">Duration</th><th width="5%"></th></tr></thead>
+            <tbody></tbody> 
+        </table>
+      </div>
+
+      <div class="mb-8 bg-blue-50/30 p-4 rounded-lg border border-blue-100">
+        <div class="flex justify-between items-end mb-2">
+            <label class="input-label text-blue-700 text-xs flex items-center gap-2 font-bold"><i class="fas fa-pills text-sm"></i> Home Care Advice (Rx)</label>
+            <button type="button" onclick="addMedRow('homeTable')" class="text-[10px] font-bold bg-white px-3 py-1 rounded text-blue-600 border border-blue-200 hover:bg-blue-50 shadow-sm">+ Add Medicine</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="input-label">Follow Up Plan</label>
-            <input
-              type="text"
-              name="follow_up"
-              value="{{ data.record.follow_up|default:'' }}"
-              class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold focus:border-blue-500 outline-none"
-              placeholder="After 7 days / SOS"
-            />
+        <table class="w-full rx-table" id="homeTable">
+            <thead><tr><th width="30%">Medicine Name</th><th width="20%">Frequency</th><th width="15%">Dose</th><th width="20%">Timing</th><th width="10%">Duration</th><th width="5%"></th></tr></thead>
+            <tbody></tbody> 
+        </table>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="bg-amber-50/50 p-3 rounded-lg border border-amber-100">
+              <label class="input-label text-amber-700">Discharge Advice / Diet</label>
+              <textarea name="discharge_advice" class="w-full p-2 bg-white border border-amber-200 rounded text-sm focus:border-amber-500 outline-none h-20">{{ data.record.discharge_advice }}</textarea>
           </div>
-        </div>
+          <div class="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">
+              <label class="input-label text-indigo-700">Follow Up Plan</label>
+              <input type="text" name="follow_up" value="{{ data.record.follow_up }}" class="w-full p-2 bg-white border border-indigo-200 rounded text-sm focus:border-indigo-500 outline-none h-20">
+          </div>
       </div>
 
-      <div
-        class="mt-10 flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100"
-      >
-        <button
-          type="submit"
-          class="flex-1 bg-slate-900 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-lg active:scale-95"
-        >
-          <i class="fas fa-save mr-2"></i> SAVE RECORD
-        </button>
-        <button
-          type="button"
-          onclick="preparePrint()"
-          class="flex-1 bg-blue-600 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition active:scale-95"
-        >
-          <i class="fas fa-print mr-2"></i> GENERATE PDF / PRINT
-        </button>
+      <div class="mt-8 flex justify-end gap-4 pt-6 border-t border-slate-100">
+        <button onclick="prepareSave()" type="submit" class="flex items-center gap-2 bg-gradient-to-r from-slate-700 to-slate-800 text-white py-2.5 px-6 rounded-lg font-bold text-sm shadow-md hover:shadow-lg active:scale-95 transition-all"><i class="fas fa-save"></i> Save Record</button>
+        <button type="button" onclick="preparePrint()" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 px-6 rounded-lg font-bold text-sm shadow-md hover:shadow-lg active:scale-95 transition-all"><i class="fas fa-print"></i> Print Card</button>
       </div>
     </div>
   </form>
 
   <div id="printableSummary">
-    <div
-      style="
-        text-align: center;
-        border-bottom: 2px solid black;
-        margin-bottom: 10px;
-      "
-    >
-      <h2
-        style="
-          font-size: 20px;
-          font-weight: bold;
-          margin: 0;
-          padding-bottom: 5px;
-        "
-      >
-        DISCHARGE SUMMARY
-      </h2>
+    <div style="text-align: center; border-bottom: 2px solid black; margin-bottom: 15px;">
+      <h2 style="font-size: 20px; font-weight: 900; margin: 0; padding-bottom: 5px;">DISCHARGE SUMMARY</h2>
     </div>
-
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px">
-      <tr>
-        <td style="width: 50%; padding: 3px">
-          <strong>Name:</strong> {{ data.profile.name|upper }}
-        </td>
-        <td style="width: 50%; padding: 3px; text-align: right">
-          <strong>Reg No:</strong> MH/BHU/NHO740
-        </td>
-      </tr>
-      <tr>
-        <td style="padding: 3px">
-          <strong>Age / Sex:</strong> {{ data.profile.age }}Y / {{ data.profile.gender }}
-        </td>
-        <td style="padding: 3px; text-align: right">
-          <strong>Registration ID:</strong> {{ data.profile.reg_number }}
-        </td>
-      </tr>
-      <tr>
-        <td style="padding: 3px">
-          <strong>DOA:</strong> {{ data.record.date_of_admission|date:"d M Y h:i A" }}
-        </td>
-        <td style="padding: 3px; text-align: right">
-          <strong>DOD:</strong> {{ current_time|date:"d M Y" }}
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2" style="padding: 3px">
-          <strong>Consultant:</strong> {{ doctor_full_name|upper }}
-        </td>
-      </tr>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <tr><td style="width: 60%; padding: 4px;"><strong>Name:</strong> {{ data.profile.name|upper }}</td><td style="width: 40%; padding: 4px;"><strong>Reg No:</strong> {{ data.profile.reg_number }}</td></tr>
+      <tr><td style="padding: 4px;"><strong>Age/Sex:</strong> {{ data.profile.age }}Y / {{ data.profile.gender }}</td><td style="padding: 4px;"><strong>DOA:</strong> {{ data.record.date_of_admission|date:"d/m/Y h:i A"|default:data.admission.admission_date|date:"d/m/Y h:i A" }}</td></tr>
+      <tr><td style="padding: 4px;"><strong>Consultant:</strong> {{ doctor_full_name|upper }}</td><td style="padding: 4px;"><strong>DOD:</strong> {{ discharge_date|date:"d/m/Y h:i A" }}</td></tr>
     </table>
-
-    <div class="section-box">
-      <p>
-        <strong>PRESENTING COMPLAINTS:</strong> <span id="pr_complaints"></span>
-      </p>
-      <p><strong>FINAL DIAGNOSIS:</strong> <span id="pr_diagnosis"></span></p>
-    </div>
-
-    <p
-      style="
-        text-decoration: underline;
-        font-weight: bold;
-        margin: 10px 0 5px 0;
-        font-size: 11px;
-      "
-    >
-      SUMMARY OF KEY INVESTIGATIONS:
-    </p>
-    <table
-      style="
-        width: 100%;
-        border-collapse: collapse;
-        border: 1px solid black;
-        font-size: 11px;
-      "
-    >
-      <tr>
-        <td style="border: 1px solid black; padding: 4px">
-          <strong>CBC:</strong> <span id="pr_hb"></span>
-          <span id="pr_tlc"></span>, PLT: <span id="pr_plt"></span>
-        </td>
-        <td style="border: 1px solid black; padding: 4px">
-          <strong>LFT:</strong> <span id="pr_lft"></span>
-        </td>
-      </tr>
-      <tr>
-        <td style="border: 1px solid black; padding: 4px">
-          <strong>KFT:</strong> <span id="pr_bul"></span>
-          <span id="pr_creat"></span>
-        </td>
-        <td style="border: 1px solid black; padding: 4px">
-          <strong>X-RAY:</strong> <span id="pr_xray"></span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2" style="border: 1px solid black; padding: 4px">
-          <strong>CT/MRI:</strong> <span id="pr_ct"></span> /
-          <span id="pr_mri"></span>
-        </td>
-      </tr>
-    </table>
-
-    <div class="section-box" style="margin-top: 10px">
-      <p>
-        <strong>GEN. CONDITION ON ADMISSION:</strong>
-        <span id="pr_cond_adm"></span>
-      </p>
-      <p>
-        <strong>GEN. CONDITION ON DISCHARGE:</strong>
-        <span id="pr_cond_dis"></span>
-      </p>
-    </div>
-
-    <div style="margin-top: 10px">
-      <p><strong>TREATMENT GIVEN:</strong></p>
-      <p
-        id="pr_treatment_given"
-        style="padding-left: 15px; min-height: 40px; white-space: pre-line"
-      ></p>
-    </div>
-
-    <div
-      style="
-        margin-top: 10px;
-        border: 1px solid #000;
-        padding: 8px;
-        background: #f9f9f9;
-      "
-    >
-      <p><strong>TREATMENT ADVISED ON DISCHARGE:</strong></p>
-      <p
-        id="pr_treatment_advised"
-        style="
-          padding-left: 15px;
-          font-weight: bold;
-          font-size: 14px;
-          white-space: pre-line;
-        "
-      ></p>
-    </div>
-
-    <p style="margin-top: 10px">
-      <strong>FOLLOW UP:</strong> <span id="pr_follow_up"></span>
-    </p>
-
-    <div style="margin-top: 60px; text-align: right">
-      <div style="display: inline-block; text-align: center">
-        <p
-          style="
-            border-top: 1px solid black;
-            width: 200px;
-            padding-top: 5px;
-            font-weight: bold;
-          "
-        >
-          Doctor's Signature <br />
-          <small>DR. {{ doctor_full_name|upper }}</small>
-        </p>
-      </div>
-    </div>
+    <div class="section-header">Clinical Summary</div>
+    <div><p><strong>Complaints:</strong> <span id="pr_complaints"></span></p><p><strong>Diagnosis:</strong> <span id="pr_diagnosis"></span></p></div>
+    <div class="section-header">Condition</div>
+    <div><p><strong>On Admission:</strong> <span id="pr_cond_adm"></span></p><p><strong>On Discharge:</strong> <span id="pr_cond_dis"></span></p></div>
+    <div class="section-header">Investigations</div><p id="pr_investigations"></p>
+    <div class="section-header">In-Hospital Treatment</div><div id="pr_hosp_meds_container"></div>
+    <div class="section-header">Home Care Advice (Rx)</div><div id="pr_home_meds_container"></div>
+    <div class="section-header">Advice & Follow Up</div><p><strong>Advice:</strong> <span id="pr_advice"></span></p><p><strong>Follow Up:</strong> <span id="pr_follow"></span></p>
+    <div style="margin-top: 50px; text-align: right;"><strong> {{ doctor_full_name|upper }}</strong><br>(Consultant Signature)</div>
   </div>
+
+  {% elif reg_id %}
+  <div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+      <i class="fas fa-user-slash text-4xl text-slate-200 mb-3"></i>
+      <p class="text-slate-400 font-bold uppercase text-xs">Patient Not Found with ID: {{ reg_id }}</p>
+  </div>
+  {% else %}
+  <div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+      <i class="fas fa-search text-4xl text-slate-200 mb-3"></i>
+      <p class="text-slate-400 font-bold uppercase text-xs">Enter Registration ID or Admission ID to Generate Discharge Summary</p>
+  </div>
+  {% endif %}
 </div>
 
 <script>
-  function preparePrint() {
-    // Mapping UI values to Print Template
-    document.getElementById("pr_complaints").innerText =
-      document.getElementsByName("presenting_complaints")[0].value;
-    document.getElementById("pr_diagnosis").innerText =
-      document.getElementsByName("final_diagnosis")[0].value;
-    document.getElementById("pr_hb").innerText =
-      document.getElementsByName("hb")[0].value;
-    document.getElementById("pr_tlc").innerText =
-      document.getElementsByName("tlc")[0].value;
-    document.getElementById("pr_plt").innerText =
-      document.getElementsByName("platelets")[0].value;
-    document.getElementById("pr_lft").innerText =
-      document.getElementsByName("lft")[0].value;
-    document.getElementById("pr_bul").innerText =
-      document.getElementsByName("bul")[0].value;
-    document.getElementById("pr_creat").innerText =
-      document.getElementsByName("creatinine")[0].value;
-    document.getElementById("pr_xray").innerText =
-      document.getElementsByName("xray")[0].value;
-    document.getElementById("pr_ct").innerText =
-      document.getElementsByName("ct_scan")[0].value;
-    document.getElementById("pr_mri").innerText =
-      document.getElementsByName("mri")[0].value;
-    document.getElementById("pr_cond_adm").innerText =
-      document.getElementsByName("cond_admission")[0].value;
-    document.getElementById("pr_cond_dis").innerText =
-      document.getElementsByName("cond_discharge")[0].value;
-    document.getElementById("pr_treatment_given").innerText =
-      document.getElementsByName("treatment_given")[0].value;
-    document.getElementById("pr_treatment_advised").innerText =
-      document.getElementsByName("treatment_advised")[0].value;
-    document.getElementById("pr_follow_up").innerText =
-      document.getElementsByName("follow_up")[0].value;
+// 🟢 FIXED SEARCH FUNCTION
+function executeSearch() {
+    let query = document.getElementById('reg_search').value;
+    if(query) {
+        // Encode URL to handle slashes in IPD ID (IPD/MED/...)
+        window.location.href = '?reg_id=' + encodeURIComponent(query);
+    }
+}
 
+// REST OF YOUR JAVASCRIPT (Autocomplete, prepareSave, preparePrint etc) 
+// All functions from your original code belong here...
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true
+});
+
+{% if messages %}
+    {% for message in messages %}
+        Toast.fire({
+            icon: '{{ message.tags }}' === 'error' ? 'error' : 'success',
+            title: '{{ message }}'
+        });
+    {% endfor %}
+{% endif %}
+
+const savedHospMeds = {{ data.hosp_meds|default:"[]"|safe }};
+const savedHomeMeds = {{ data.home_meds|default:"[]"|safe }};
+
+$(document).ready(function() {
+    if(savedHospMeds.length > 0) savedHospMeds.forEach(med => addMedRow('hospitalTable', med));
+    else addMedRow('hospitalTable');
+
+    if(savedHomeMeds.length > 0) savedHomeMeds.forEach(med => addMedRow('homeTable', med));
+    else addMedRow('homeTable');
+});
+
+function addMedRow(tableId, data = null) {
+    const rowHtml = `
+    <tr class="med-row">
+        <td>
+            <input type="text" class="med-search" placeholder="Brand Name" value="${data ? data.name : ''}">
+            <input type="text" class="med-note" placeholder="Instructions..." value="${data ? (data.note || '') : ''}">
+        </td>
+        <td>
+            <select class="med-freq">
+                <option value="OD (1-0-0) सकाळी" ${data && data.freq.includes('OD') ? 'selected' : ''}>OD (1-0-0)</option>
+                <option value="BD (1-0-1) सकाळ/संध्याकाळ" ${data && data.freq.includes('BD') ? 'selected' : ''}>BD (1-0-1)</option>
+                <option value="TDS (1-1-1) सकाळ/दुपार/संध्याकाळ" ${data && data.freq.includes('TDS') ? 'selected' : ''}>TDS (1-1-1)</option>
+                <option value="QID (1-1-1-1)" ${data && data.freq.includes('QID') ? 'selected' : ''}>QID (1-1-1-1)</option>
+                <option value="SOS (गरज भासल्यास)" ${data && data.freq.includes('SOS') ? 'selected' : ''}>SOS</option>
+            </select>
+        </td>
+        <td>
+            <select class="med-dose">
+                <option value="1 Tab" ${data && data.dose === '1 Tab' ? 'selected' : ''}>1 Tab</option>
+                <option value="1/2 Tab" ${data && data.dose === '1/2 Tab' ? 'selected' : ''}>1/2 Tab</option>
+                <option value="1 Cap" ${data && data.dose === '1 Cap' ? 'selected' : ''}>1 Cap</option>
+                <option value="1 Inj" ${data && data.dose === '1 Inj' ? 'selected' : ''}>1 Inj</option>
+                <option value="5 ml" ${data && data.dose === '5 ml' ? 'selected' : ''}>5 ml</option>
+                <option value="10 ml" ${data && data.dose === '10 ml' ? 'selected' : ''}>10 ml</option>
+            </select>
+        </td>
+        <td>
+            <select class="med-timing">
+                <option value="After Meal (जेवणानंतर)" ${data && data.time.includes('After') ? 'selected' : ''}>After Meal (जेवणानंतर)</option>
+                <option value="Before Meal (जेवणापूर्वी)" ${data && data.time.includes('Before') ? 'selected' : ''}>Before Meal (जेवणापूर्वी)</option>
+                <option value="Empty Stomach (रिकाम्या पोटी)" ${data && data.time.includes('Empty') ? 'selected' : ''}>Empty Stomach</option>
+            </select>
+        </td>
+        <td>
+            <div class="flex gap-1">
+                <input type="number" class="med-dur-val" value="${data ? data.dur_val : '5'}" style="width:40px;">
+                <select class="med-dur-type">
+                    <option value="Days" ${data && data.dur_type === 'Days' ? 'selected' : ''}>Days</option>
+                    <option value="Weeks" ${data && data.dur_type === 'Weeks' ? 'selected' : ''}>Weeks</option>
+                </select>
+            </div>
+        </td>
+        <td class="text-center">
+            <button type="button" onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+        </td>
+    </tr>`;
+    const tableBody = $(`#${tableId} tbody`);
+    tableBody.append(rowHtml);
+    setupAutocomplete(tableBody.find(".med-search").last());
+}
+
+function setupAutocomplete(element) {
+    element.autocomplete({
+        source: "{% url 'pulsehospital:medicine_lookup' %}", 
+        minLength: 2,
+        select: function(event, ui) { $(this).val(ui.item.value); return false; }
+    });
+}
+
+function getTableData(tableId) {
+    let data = [];
+    $(`#${tableId} tbody tr`).each(function() {
+        let name = $(this).find('.med-search').val();
+        if(name) {
+            data.push({
+                name: name, note: $(this).find('.med-note').val(),
+                freq: $(this).find('.med-freq').val(), dose: $(this).find('.med-dose').val(),
+                time: $(this).find('.med-timing').val(), dur_val: $(this).find('.med-dur-val').val(),
+                dur_type: $(this).find('.med-dur-type').val()
+            });
+        }
+    });
+    return data;
+}
+
+function prepareSave() {
+    $('#hosp_json').val(JSON.stringify(getTableData('hospitalTable')));
+    $('#home_json').val(JSON.stringify(getTableData('homeTable')));
+}
+
+function preparePrint() {
+    prepareSave();
+    $('#pr_complaints').text($('[name="presenting_complaints"]').val());
+    $('#pr_diagnosis').text($('[name="final_diagnosis"]').val());
+    $('#pr_cond_adm').text($('[name="cond_admission"]').val());
+    $('#pr_cond_dis').text($('[name="cond_discharge"]').val());
+    $('#pr_advice').text($('[name="discharge_advice"]').val());
+    $('#pr_follow').text($('[name="follow_up"]').val());
+    let invStr = `Hb: ${$('[name="hb"]').val()}, TLC: ${$('[name="tlc"]').val()}, Plt: ${$('[name="platelets"]').val()} | Creat: ${$('[name="creatinine"]').val()}, BUL: ${$('[name="bul"]').val()}`;
+    $('#pr_investigations').text(invStr);
+    renderPrintTable('hospitalTable', 'pr_hosp_meds_container');
+    renderPrintTable('homeTable', 'pr_home_meds_container');
     window.print();
-  }
+}
+
+function renderPrintTable(sourceTableId, targetDivId) {
+    const data = getTableData(sourceTableId);
+    let html = '<table class="print-table"><thead><tr><th class="col-sr">Sr</th><th class="col-name">Medicine Name</th><th class="col-freq">Frequency</th><th class="col-dose">Dose & Timing</th><th class="col-dur">Dur</th></tr></thead><tbody>';
+    if(data.length === 0) html += '<tr><td colspan="5" style="text-align:center;">-- Nil --</td></tr>';
+    else {
+        data.forEach((row, index) => {
+            html += `<tr><td class="col-sr">${index + 1}</td><td class="col-name"><strong>${row.name}</strong>${row.note ? '<br><small>('+row.note+')</small>':''}</td><td class="col-freq">${row.freq}</td><td class="col-dose">${row.dose}<br><small>${row.time}</small></td><td class="col-dur">${row.dur_val} ${row.dur_type}</td></tr>`;
+        });
+    }
+    html += '</tbody></table>';
+    $(`#${targetDivId}`).html(html);
+}
 </script>
 {% endblock %}

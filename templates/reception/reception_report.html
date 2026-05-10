@@ -1,14 +1,17 @@
 {% extends 'reception/reception_dashboard.html' %}
 
 {% block content %}
-<div class="space-y-6 px-2 sm:px-4 pb-10">
-    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
+<!-- 🟢 Main Wrapper with min-h-screen to ensure full height -->
+<div class="flex flex-col min-h-screen space-y-4 sm:space-y-6 px-2 sm:px-4 pb-20">
+    
+    <!-- 🟢 Filter Header Center -->
+    <div class="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-5">
             <div>
-                <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight italic">
-                    <i class="fas fa-file-medical-alt mr-2 text-blue-600"></i> Clinical Report Center
+                <h2 class="text-base sm:text-lg font-black text-slate-800 uppercase tracking-tight italic">
+                    <i class="fas fa-file-medical-alt mr-2 text-green-600"></i> Clinical Report Center
                 </h2>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                     {% if search_query %} Searching Archives for: "{{ search_query }}" {% else %} Daily Logs for {{ selected_date }} {% endif %}
                 </p>
             </div>
@@ -16,18 +19,18 @@
             <form method="GET" action="." class="w-full lg:w-auto">
                 <div class="flex flex-col md:flex-row items-end gap-3">
                     
-                    <div class="flex flex-col space-y-1 w-full md:w-72">
-                        <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Search Patient Name / Reg ID</label>
+                    <div class="flex flex-col space-y-1 w-full md:w-64">
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Search Patient / ID</label>
                         <div class="relative group">
-                            <i class="fas fa-search absolute left-3 top-3 text-slate-300 group-focus-within:text-blue-500 transition-colors"></i>
+                            <i class="fas fa-search absolute left-3 top-3 text-slate-400 group-focus-within:text-green-500 transition-colors text-sm"></i>
                             <input type="text" name="report_q" value="{{ search_query|default:'' }}" placeholder="Search all dates..." 
-                                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:border-blue-500 focus:bg-white transition-all">
+                                   class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 placeholder-slate-400 outline-none focus:border-green-500 focus:bg-white transition-all">
                         </div>
                     </div>
 
                     <div class="flex flex-col space-y-1 w-full md:w-44">
                         <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Consultant</label>
-                        <select name="doctor_filter" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-blue-500 transition-all">
+                        <select name="doctor_filter" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 outline-none focus:border-green-500 focus:bg-white transition-all">
                             <option value="">All Doctors</option>
                             {% for doc in doctors %}
                                 <option value="{{ doc.id }}" {% if selected_doctor == doc.id|stringformat:"s" %}selected{% endif %}>Dr. {{ doc.name }}</option>
@@ -38,15 +41,15 @@
                     <div class="flex flex-col space-y-1 w-full md:w-40">
                         <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Select Date</label>
                         <input type="date" name="date" value="{{ selected_date }}" 
-                               class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-blue-500 transition-all">
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-700 outline-none focus:border-green-500 focus:bg-white transition-all">
                     </div>
                     
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <button type="submit" class="flex-1 bg-slate-800 text-white px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-sm">
+                    <div class="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                        <button type="submit" class="flex-1 md:flex-none bg-green-600 text-white px-6 py-2 rounded-md font-bold text-[11px] uppercase tracking-widest hover:bg-green-700 transition-all shadow-sm active:scale-95">
                             Apply
                         </button>
-                        <button type="button" onclick="downloadCSV()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-black hover:bg-emerald-700 text-[10px] uppercase tracking-widest transition-all shadow-sm flex items-center">
-                            <i class="fas fa-download mr-2"></i> CSV
+                        <button type="button" onclick="downloadCSV()" class="bg-emerald-500 text-white px-4 py-2 rounded-md font-bold hover:bg-emerald-600 text-[11px] uppercase tracking-widest transition-all shadow-sm flex items-center justify-center active:scale-95">
+                            <i class="fas fa-download mr-1.5"></i> CSV
                         </button>
                     </div>
                 </div>
@@ -54,106 +57,158 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Report Listings</h3>
-            <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 italic">
-                Total Records: {{ report.count }}
+    <!-- 🟢 Listings Container with Scroll Implementation -->
+    <div class="bg-white rounded-md border border-slate-200 shadow-sm flex flex-col overflow-hidden mb-10">
+        <div class="px-4 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 flex-shrink-0">
+            <h3 class="text-[10px] sm:text-[11px] font-black text-slate-600 uppercase tracking-widest flex items-center">
+                <div class="h-2 w-2 rounded-full bg-green-500 mr-2"></div> Report Listings
+            </h3>
+            <span class="text-[9px] sm:text-[10px] font-black text-green-700 bg-green-50 px-3 py-1 rounded-md border border-green-100">
+                Total: {{ report.count }}
             </span>
         </div>
         
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse" id="reportTable">
-                <thead class="bg-white text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
+        <!-- 💻 Desktop Table View: Scroll enabled with max-height -->
+        <div class="hidden md:block overflow-x-auto overflow-y-auto" style="max-height: calc(100vh - 350px);">
+            <table class="w-full text-left border-separate border-spacing-0" id="reportTable">
+                <thead class="bg-white text-slate-400 text-[9px] font-black uppercase tracking-[0.15em] border-b border-slate-200 sticky top-0 z-10">
                     <tr>
-                        <th class="px-6 py-5">Sr.</th>
-                        <th class="px-6 py-5">Reg ID</th>
-                        <th class="px-6 py-5">Patient Name</th>
-                        <th class="px-6 py-5 text-center">Visit Type</th> 
-                        <th class="px-6 py-5">Consultant</th>
-                        <th class="px-6 py-5">Status</th>
-                        <th class="px-6 py-5">Mobile & Address</th>
+                        <th class="px-5 py-4 bg-white border-b border-slate-200">Sr.</th>
+                        <th class="px-5 py-4 bg-white border-b border-slate-200">Reg ID</th>
+                        <th class="px-5 py-4 bg-white border-b border-slate-200">Patient Name</th>
+                        <th class="px-5 py-4 bg-white border-b border-slate-200 text-center">Visit Type</th> 
+                        <th class="px-5 py-4 bg-white border-b border-slate-200">Consultant</th>
+                        <th class="px-5 py-4 bg-white border-b border-slate-200">Status</th>
+                        <th class="px-5 py-4 bg-white border-b border-slate-200">Mobile & Address</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50 text-xs">
+                <tbody class="divide-y divide-slate-100 text-xs">
                     {% for item in report %}
-                    <tr class="hover:bg-blue-50/30 transition group">
-                        <td class="px-6 py-4 font-bold text-slate-300">{{ forloop.counter }}</td>
-                        <td class="px-6 py-4 font-mono text-blue-600 font-bold whitespace-nowrap">{{ item.patient_profile.reg_number|default:"--N/A--" }}</td>
-                        <td class="px-6 py-4">
-                            <div class="font-black text-slate-700 uppercase group-hover:text-blue-700 transition-colors">{{ item.patient_name }}</div>
-                            <div class="text-[10px] text-slate-400 font-bold uppercase">{{ item.patient_profile.gender|default:"-" }} / {{ item.age|default:"-" }}Y</div>
+                    <tr class="hover:bg-slate-50 transition-colors group">
+                        <td class="px-5 py-3 font-bold text-slate-400">{{ forloop.counter }}</td>
+                        <td class="px-5 py-3">
+                            <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded-sm font-mono font-bold border border-slate-200 text-[10px]">
+                                {{ item.patient_profile.reg_number|default:"--N/A--" }}
+                            </span>
                         </td>
-                        <td class="px-6 py-4 text-center">
+                        <td class="px-5 py-3">
+                            <div class="font-bold text-slate-800 uppercase group-hover:text-green-600 transition-colors">{{ item.patient_name }}</div>
+                            <div class="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{{ item.patient_profile.gender|default:"-" }} / {{ item.age|default:"-" }}Y</div>
+                        </td>
+                        <td class="px-5 py-3 text-center">
                             {% if item.is_follow_up %}
-                                <span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-100 text-[8px] font-black uppercase">Follow-up</span>
+                                <span class="px-2 py-1 bg-amber-50 text-amber-600 rounded-sm border border-amber-100 text-[9px] font-bold uppercase tracking-wide">Follow-up</span>
                             {% else %}
-                                <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100 text-[8px] font-black uppercase">New Visit</span>
+                                <span class="px-2 py-1 bg-blue-50 text-blue-600 rounded-sm border border-blue-100 text-[9px] font-bold uppercase tracking-wide">New Visit</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-slate-700 font-bold">Dr. {{ item.assigned_doctor.name }}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-5 py-3">
+                            <span class="text-slate-700 font-bold text-xs uppercase tracking-tight">Dr. {{ item.assigned_doctor.name }}</span>
+                        </td>
+                        <td class="px-5 py-3">
                             {% if item.status == 'Completed' %}
-                                <span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[9px] font-black uppercase border border-emerald-100 flex items-center w-max">
+                                <span class="bg-green-50 text-green-600 px-2 py-1 rounded-sm text-[9px] font-bold uppercase tracking-wide border border-green-100 flex items-center w-max">
                                     <i class="fas fa-check-circle mr-1.5"></i> Done
                                 </span>
                             {% else %}
-                                <span class="bg-orange-50 text-orange-600 px-2 py-1 rounded text-[9px] font-black uppercase border border-orange-100 flex items-center w-max">
+                                <span class="bg-red-50 text-red-600 px-2 py-1 rounded-sm text-[9px] font-bold uppercase tracking-wide border border-red-100 flex items-center w-max">
                                     <i class="fas fa-clock mr-1.5"></i> Pending
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4">
-    <div class="flex flex-col">
-        <a href="tel:{{ item.phone }}" 
-           class="font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center group">
-            <i class="fas fa-phone-alt mr-2 text-[9px] opacity-40 group-hover:opacity-100"></i>
-            {{ item.phone }}
-        </a>
-        
-        <div class="text-[10px] text-slate-400 font-medium max-w-[150px] truncate italic mt-1" 
-             title="{{ item.patient_profile.address }}">
-            {{ item.patient_profile.address|default:"No Address" }}
-        </div>
-    </div>
-</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="px-6 py-20 text-center">
-                            <div class="flex flex-col items-center">
-                                <i class="fas fa-search-minus text-4xl text-slate-200 mb-3 block"></i>
-                                <p class="text-slate-400 font-black uppercase tracking-widest text-xs">No records found for your search criteria.</p>
-                                <a href="{% url 'pulsehospital:daily_report' %}" class="mt-4 text-blue-600 text-[10px] font-black uppercase underline">Reset All Filters</a>
+                        <td class="px-5 py-3">
+                            <div class="flex flex-col">
+                                <a href="tel:{{ item.phone }}" class="font-bold text-slate-600 hover:text-green-600 transition-colors flex items-center group/phone">
+                                    <i class="fas fa-phone-alt mr-2 text-[10px] text-slate-400 group-hover/phone:text-green-500 transition-colors"></i>
+                                    {{ item.phone }}
+                                </a>
+                                <div class="text-[10px] text-slate-400 font-medium max-w-[150px] truncate italic mt-1" title="{{ item.patient_profile.address }}">
+                                    {{ item.patient_profile.address|default:"No Address" }}
+                                </div>
                             </div>
                         </td>
                     </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="px-5 py-16 text-center text-slate-400 font-bold uppercase text-xs">No records found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <!-- 📱 Mobile Card View: Scroll enabled with max-height -->
+        <div class="md:hidden divide-y divide-slate-100 overflow-y-auto" style="max-height: calc(100vh - 300px);">
+            {% for item in report %}
+            <div class="p-4 space-y-3 bg-white hover:bg-slate-50 transition-colors">
+                <div class="flex justify-between items-start">
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reg ID: {{ item.patient_profile.reg_number|default:"--" }}</span>
+                        <h4 class="text-sm font-black text-slate-800 uppercase italic">{{ item.patient_name }}</h4>
+                        <p class="text-[10px] font-bold text-slate-500">{{ item.patient_profile.gender|default:"-" }} / {{ item.age|default:"-" }}Y</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        {% if item.status == 'Completed' %}
+                            <span class="bg-green-50 text-green-600 px-2 py-1 rounded-sm text-[8px] font-black uppercase border border-green-100">Done</span>
+                        {% else %}
+                            <span class="bg-red-50 text-red-600 px-2 py-1 rounded-sm text-[8px] font-black uppercase border border-red-100">Pending</span>
+                        {% endif %}
+                        
+                        {% if item.is_follow_up %}
+                            <span class="text-[8px] font-black text-amber-600 uppercase">Follow-up</span>
+                        {% else %}
+                            <span class="text-[8px] font-black text-blue-600 uppercase">New Visit</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 border-t border-slate-50 pt-3">
+                    <div class="flex flex-col">
+                        <span class="text-[8px] font-black text-slate-400 uppercase mb-1">Consultant</span>
+                        <span class="text-[11px] font-bold text-slate-700">Dr. {{ item.assigned_doctor.name }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[8px] font-black text-slate-400 uppercase mb-1">Contact</span>
+                        <a href="tel:{{ item.phone }}" class="text-[11px] font-bold text-blue-600">{{ item.phone }}</a>
+                    </div>
+                </div>
+
+                {% if item.patient_profile.address %}
+                <div class="flex flex-col border-t border-slate-50 pt-2">
+                    <span class="text-[8px] font-black text-slate-400 uppercase mb-1">Address</span>
+                    <p class="text-[10px] text-slate-500 italic leading-tight">{{ item.patient_profile.address }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="p-10 text-center text-slate-400 font-bold uppercase text-xs">No records found.</div>
+            {% endfor %}
         </div>
     </div>
 </div>
 
 <script>
-    // 🚀 Professional CSV Export
     function downloadCSV() {
         let csv = [];
-        let rows = document.querySelectorAll("#reportTable tr");
+        let rows = [];
+        let desktopRows = document.querySelectorAll("#reportTable tr");
         
-        for (let i = 0; i < rows.length; i++) {
-            let row = [], cols = rows[i].querySelectorAll("td, th");
+        for (let i = 0; i < desktopRows.length; i++) {
+            let row = [], cols = desktopRows[i].querySelectorAll("td, th");
             for (let j = 0; j < cols.length; j++) {
                 let data = cols[j].innerText.replace(/\n/g, " ").replace(/\s\s+/g, ' ').trim();
                 row.push('"' + data + '"');
             }
-            csv.push(row.join(","));
+            if(row.length > 0) csv.push(row.join(","));
+        }
+
+        if (csv.length <= 1) {
+            alert("No data available to export.");
+            return;
         }
 
         let csvFile = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
         let downloadLink = document.createElement("a");
         let dateLabel = "{{ selected_date }}";
-        let filename = "Pulse_Patient_Report_" + dateLabel + ".csv";
+        let filename = "Pulse_Report_" + dateLabel + ".csv";
 
         downloadLink.download = filename;
         downloadLink.href = window.URL.createObjectURL(csvFile);

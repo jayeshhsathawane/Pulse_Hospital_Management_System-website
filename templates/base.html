@@ -112,7 +112,7 @@
     {% else %}
         <li><a href="{% url 'pulsehospital:contact' %}#appointment">Appointment</a></li>
         <li><a href="{% url 'pulsehospital:contact' %}#contact">Contact</a></li>
-        <li><a href="{% url 'login' %}">Login</a></li> 
+        {% comment %} <li><a href="{% url 'login' %}">Login</a></li>  {% endcomment %}
     {% endif %}
 </ul>
         </div>

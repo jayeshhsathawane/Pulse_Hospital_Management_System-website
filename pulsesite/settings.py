@@ -24,7 +24,6 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'pulsehospital', 
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -35,6 +34,8 @@ INSTALLED_APPS = [
     'import_export',
     'rest_framework',
     'rest_framework.authtoken',
+    'pulsehospital', 
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -90,6 +91,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.dev',
+    'https://*.ngrok.io',
+    'https://*.ngrok-free.app'
+]
+
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
@@ -132,5 +139,5 @@ REST_FRAMEWORK = {
     ],
     # # 👇  Pagination settings add/update 
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    # 'PAGE_SIZE': 50,  # Ab ek baar mein 50 medicines aayengi
+    # 'PAGE_SIZE': 50, 
 }

@@ -1,123 +1,374 @@
-{% extends "base.html" %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Portal Login | Pulse Hospital</title>
+    
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pulse App">
+    <link rel="apple-touch-icon" href="{% static 'images/icon-192.png' %}">
 
-{% block title %}Login | Pulse Hospital{% endblock %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-{% block content %}
-<link rel="manifest" href="{% static 'manifest.json' %}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-<section class="login-page" style="padding: 60px 0; background: #f4f7f6; min-height: 100%;">
-    <div class="container" style="width: 100%; max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e1e8ed;">
-        
-        <div id="installContainer" style="display: none; text-align: center; margin-bottom: 15px; padding: 10px; background: #f0fff4; border: 1px dashed #2ecc71; border-radius: 12px;">
-            <p style="font-size: 11px; font-weight: bold; color: #2ecc71; margin-bottom: 5px;">Install Pulse App for faster access</p>
-            <button id="btnInstall" type="button" style="background: #2ecc71; color: white; border: none; padding: 6px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; width: 100%;">
-                INSTALL NOW
-            </button>
-        </div>
-
-        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-            <div style="background: #f8fafc; padding: 10px; border-radius: 50%; border: 2px solid #2ecc71; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
-                <img src="/static/public/logo.jpg" alt="Logo" style="max-height: 60px; max-width: 60px; object-fit: contain; border-radius: 50%;">
-            </div>
-        </div>
-
-        <h2 style="text-align: center; font-weight: 900; color: #2c3e50; font-size: 20px; margin-bottom: 20px; text-transform: uppercase;">Portal Login</h2>
-
-        {% if form.errors %}
-            <p style="color: #e74c3c; font-size: 12px; text-align: center; margin-bottom: 15px; padding: 8px; border-radius: 8px; background: #fff5f5; border: 1px solid #fed7d7;">
-                Invalid username or password.
-            </p>
-        {% endif %}
-
-        <form method="post" style="display: flex; flex-direction: column; gap: 15px;">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 5px; display: block; text-transform: uppercase;">Username</label>
-                <div style="position: relative;">
-                    <i class="fas fa-user" style="position: absolute; left: 15px; top: 15px; color: #cbd5e1;"></i>
-                    {{ form.username }}
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 5px; display: block; text-transform: uppercase;">Password</label>
-                <div style="position: relative; display: flex; align-items: center;">
-                    <i class="fas fa-lock" style="position: absolute; left: 15px; color: #cbd5e1; z-index: 10;"></i>
-                    
-                    <div style="width: 100%;">
-                        {{ form.password }}
-                    </div>
-
-                    <span onclick="togglePassword()" style="position: absolute; right: 15px; cursor: pointer; color: #94a3b8; z-index: 20; padding: 5px;">
-                        <i id="eyeIcon" class="fas fa-eye"></i>
-                    </span>
-                </div>
-            </div>
-            
-            <button type="submit" style="width: 100%; padding: 14px; background: #2ecc71; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 14px; margin-top: 5px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2); transition: 0.3s;">
-                SIGN IN
-            </button>
-            
-            <input type="hidden" name="next" value="{% if next %}{{ next }}{% else %}{% url 'pulsehospital:dashboard_redirect' %}{% endif %}">
-        </form>
-
-        <p style="text-align: center; margin-top: 20px;">
-            <a href="{% url 'password_reset' %}" style="color: #94a3b8; text-decoration: none; font-size: 12px; font-weight: 600;">Forgot password?</a>
-        </p>
-    </div>
-</section>
-
-<style>
-    /* Django default widgets ko style karne ke liye */
-    input[type="text"], input[type="password"] {
-        width: 100% !important;
-        padding: 12px 45px 12px 40px !important; /* Space for both icons */
-        border: 2px solid #f1f5f9 !important;
-        border-radius: 12px !important;
-        font-size: 14px !important;
-        background: #f8fafc !important;
-        outline: none !important;
-        box-sizing: border-box !important;
-    }
-    input:focus {
-        border-color: #2ecc71 !important;
-        background: white !important;
-    }
-</style>
-
-<script>
-    // 🟢 Password Toggle Logic with ID Check
-    function togglePassword() {
-        // Django default ID is 'id_password'
-        const passInput = document.getElementById('id_password');
-        const eyeIcon = document.getElementById('eyeIcon');
-        
-        if (passInput.type === 'password') {
-            passInput.type = 'text';
-            eyeIcon.classList.remove('fa-eye');
-            eyeIcon.classList.add('fa-eye-slash');
-        } else {
-            passInput.type = 'password';
-            eyeIcon.classList.remove('fa-eye-slash');
-            eyeIcon.classList.add('fa-eye');
+    <style>
+        :root {
+            --primary: #2563eb; /* Medical Blue */
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981; /* Emerald Green */
+            --bg-color: #f1f5f9;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
         }
-    }
 
-    // PWA & Install logic remains the same
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register("{% static 'service-worker.js' %}");
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 🟢 HOSPITAL BACKGROUND STICKERS / WATERMARKS */
+        .bg-stickers {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-stickers i {
+            position: absolute;
+            color: var(--primary);
+            opacity: 0.04;
+        }
+        .st-1 { top: 10%; left: 10%; font-size: 150px; transform: rotate(-15deg); }
+        .st-2 { bottom: 15%; right: 10%; font-size: 200px; transform: rotate(10deg); }
+        .st-3 { top: 40%; right: 20%; font-size: 120px; transform: rotate(25deg); }
+        .st-4 { bottom: 20%; left: 20%; font-size: 180px; transform: rotate(-20deg); }
+        .st-5 { top: 5%; right: 40%; font-size: 100px; }
+
+        /* 🟢 LOGIN CARD */
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            border-top: 5px solid var(--primary);
+            padding: 40px 30px;
+            position: relative;
+        }
+
+        /* App Install Prompt */
+        #installContainer {
+            display: none;
+            background: #eff6ff;
+            border: 1px dashed #60a5fa;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: slideDown 0.4s ease-out;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Logo Area */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .logo-circle {
+            background: #ffffff;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.15);
+            border: 2px solid #eff6ff;
+        }
+        .logo-circle img {
+            max-height: 55px;
+            max-width: 55px;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+        /* Headings */
+        .title {
+            text-align: center;
+            font-weight: 900;
+            color: var(--text-main);
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+        }
+
+        /* Form Fields */
+        .form-group {
+            margin-bottom: 18px;
+            position: relative;
+        }
+        .form-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-wrapper i.icon-left {
+            position: absolute;
+            left: 16px;
+            color: #94a3b8;
+            font-size: 14px;
+            z-index: 2;
+        }
+        
+        /* Overriding Django Default Inputs */
+        input[type="text"], input[type="password"] {
+            width: 100% !important;
+            padding: 14px 45px 14px 45px !important;
+            border: 2px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: var(--text-main) !important;
+            background: #f8fafc !important;
+            outline: none !important;
+            transition: all 0.3s ease !important;
+            box-sizing: border-box !important;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: var(--primary) !important;
+            background: #ffffff !important;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+        }
+
+        .eye-btn {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 5px;
+            z-index: 2;
+        }
+        .eye-btn:hover { color: var(--primary); }
+
+        /* Buttons */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 25px;
+        }
+        .footer-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .footer-link a:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-stickers">
+        <i class="fas fa-heartbeat st-1"></i>
+        <i class="fas fa-stethoscope st-2"></i>
+        <i class="fas fa-hospital st-3"></i>
+        <i class="fas fa-notes-medical st-4"></i>
+        <i class="fas fa-user-doctor st-5"></i>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+
+            <div id="installContainer">
+                <p style="font-size: 11px; font-weight: 800; color: #1e40af; margin-bottom: 8px; text-transform: uppercase;">
+                    <i class="fas fa-mobile-alt mr-1"></i> Install Portal App
+                </p>
+                <button id="btnInstall" type="button" style="background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; width: 100%; transition: 0.3s;">
+                    INSTALL NOW
+                </button>
+            </div>
+
+            <div class="logo-container">
+                <div class="logo-circle">
+                    <img src="/static/public/logo.jpg" alt="Hospital Logo">
+                </div>
+            </div>
+
+            <h2 class="title">Pulse Hospital</h2>
+            <p class="subtitle">Secure Staff Portal</p>
+
+            {% if form.errors %}
+                <div class="error-msg">
+                    <i class="fas fa-exclamation-circle"></i> Invalid credentials provided.
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label class="form-label">Username / Staff ID</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user-shield icon-left"></i>
+                        {{ form.username }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Authorization Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock icon-left"></i>
+                        {{ form.password }}
+                        <button type="button" class="eye-btn" onclick="togglePassword()">
+                            <i id="eyeIcon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-submit">
+                    Authenticate <i class="fas fa-arrow-right ml-2" style="margin-left: 5px;"></i>
+                </button>
+                
+                <input type="hidden" name="next" value="{% if next %}{{ next }}{% else %}{% url 'pulsehospital:dashboard_redirect' %}{% endif %}">
+            </form>
+
+            <div class="footer-link">
+                <a href="{% url 'password_reset' %}"><i class="fas fa-key mr-1"></i> Forgot Password?</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Password Visibility Toggle
+        function togglePassword() {
+            // Django defaults password input to id_password
+            const passInput = document.getElementById('id_password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passInput) {
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    passInput.type = 'password';
+                    eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            }
+        }
+
+        // 🟢 PWA & Install Logic
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{% static 'service-worker.js' %}")
+                .then(registration => console.log('SW Registered'))
+                .catch(err => console.log('SW Registration Failed', err));
+            });
+        }
+
+        let deferredPrompt;
+        const installContainer = document.getElementById('installContainer');
+        const btnInstall = document.getElementById('btnInstall');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installContainer.style.display = 'block';
         });
-    }
 
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        document.getElementById('installContainer').style.display = 'block';
-    });
-</script>
-{% endblock %}
+        btnInstall.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installContainer.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+{% extends 'doctor/doctor_dashboard.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    /* 🟢 TIMELINE STYLES */
+    .timeline-entry {
+        position: relative;
+        padding-left: 20px;
+        margin-bottom: 15px;
+        border-left: 2px solid #e2e8f0;
+    }
+    .timeline-entry:last-child { border-left: 2px solid transparent; }
+    .timeline-dot {
+        position: absolute;
+        left: -6px;
+        top: 0;
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        background-color: #3b82f6;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #bfdbfe;
+    }
+    .time-header {
+        font-size: 10px;
+        font-weight: 900;
+        color: #1e40af;
+        background-color: #eff6ff;
+        padding: 2px 8px;
+        border-radius: 12px;
+        display: inline-block;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .data-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+    .data-box {
+        background: #f8fafc;
+        border-left: 3px solid #cbd5e1;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: #334155;
+        font-weight: 600;
+    }
+    /* Specific Colors */
+    .type-vitals { border-color: #f87171; background: #fef2f2; }
+    .type-fluids { border-color: #60a5fa; background: #eff6ff; }
+    .type-meds { border-color: #34d399; background: #ecfdf5; }
+    .type-notes { border-color: #fbbf24; background: #fffbeb; font-style: italic; }
+    
+    .raw-data-hidden { display: none; }
+
+    /* 🟢 COLLAPSE ANIMATION */
+    .accordion-content { transition: all 0.3s ease-in-out; }
+    .rotate-180 { transform: rotate(180deg); }
+    .chevron-icon { transition: transform 0.3s ease; }
+</style>
+
+<div class="px-4 sm:px-6 py-6 bg-slate-50 min-h-screen">
+    
+    <div class="mb-6">
+        <a href="{% url 'pulsehospital:doctor_admitted_patients' %}" class="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2 inline-block">
+            <i class="fas fa-arrow-left mr-1"></i> Return to Ward List
+        </a>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="h-12 w-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-slate-800 uppercase">{{ admission.patient.name }}</h1>
+                    <div class="flex gap-3 text-[10px] font-bold text-slate-500 uppercase mt-1">
+                        <span class="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Reg: {{ admission.patient.reg_number }}</span>
+                        <span class="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Bed: {{ admission.bed.bed_number }}</span>
+                        <span class="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Age: {{ admission.patient.age }}Y</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Admitted On</p>
+                <p class="text-sm font-bold text-slate-700">{{ admission.admission_date|date:"d M Y, h:i A" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <i class="fas fa-history text-blue-500"></i> Daily Progression Records
+    </h3>
+
+    <div class="space-y-3">
+        {% for record in records %}
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            
+            <button onclick="toggleAccordion('{{ record.id }}')" class="w-full flex justify-between items-center px-5 py-4 bg-white hover:bg-slate-50 transition-colors text-left focus:outline-none">
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-center shadow-sm">
+                        <span class="block text-[9px] font-bold uppercase">{{ record.date|date:"M" }}</span>
+                        <span class="block text-lg font-black leading-none">{{ record.date|date:"d" }}</span>
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-black text-slate-800 uppercase tracking-tight">Daily Clinical Sheet</h6>
+                        <span class="text-[10px] text-slate-400 font-bold">Nursing & Clinical Data • Day {{ forloop.revcounter }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded hidden sm:inline-block">View Details</span>
+                    <i id="icon-{{ record.id }}" class="fas fa-chevron-down text-slate-400 text-sm chevron-icon {% if forloop.first %}rotate-180{% endif %}"></i>
+                </div>
+            </button>
+
+            <div id="content-{{ record.id }}" class="accordion-content border-t border-slate-100 {% if not forloop.first %}hidden{% endif %}">
+                <div class="p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="lg:col-span-2 border-r border-slate-100 pr-0 lg:pr-6">
+                        <h5 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Observation Timeline</h5>
+                        
+                        <div id="timeline-container-{{ record.id }}"></div>
+
+                        <div id="raw-data-{{ record.id }}" class="raw-data-hidden">
+                            <div class="raw-vitals">{{ record.vitals|default:"" }}</div>
+                            <div class="raw-saline">{{ record.saline_details|default:"" }}</div>
+                            <div class="raw-injection">{{ record.injection_details|default:"" }}</div>
+                            <div class="raw-notes">{{ record.other_notes|default:"" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-1">
+                        <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-100 h-full flex flex-col">
+                            <h5 class="text-[9px] font-black text-yellow-600 uppercase tracking-widest mb-2 flex items-center">
+                                <i class="fas fa-user-md mr-1.5"></i> Doctor's Remarks
+                            </h5>
+                            
+                            <form method="POST" class="flex-1 flex flex-col">
+                                {% csrf_token %}
+                                <input type="hidden" name="record_id" value="{{ record.id }}">
+                                
+                                <textarea name="doctor_note" 
+                                          class="w-full flex-1 bg-white border border-yellow-200 rounded-lg p-3 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 resize-none mb-3"
+                                          placeholder="Type clinical instructions or observations here to append..."></textarea>
+                                
+                                <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md active:scale-95">
+                                    <i class="fas fa-plus-circle mr-1"></i> Add Note
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-12 text-center">
+            <div class="h-12 w-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100">
+                <i class="fas fa-notes-medical text-slate-300 text-xl"></i>
+            </div>
+            <p class="text-xs font-bold text-slate-500 uppercase">No records found.</p>
+            <p class="text-[10px] text-slate-400 mt-1">Reception entries will appear here.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // 🟢 ACCORDION TOGGLE FUNCTION
+    function toggleAccordion(id) {
+        const content = document.getElementById(`content-${id}`);
+        const icon = document.getElementById(`icon-${id}`);
+        
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            content.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    }
+
+    // 🟢 JS LOGIC: Converts [Time] text into Beautiful Timeline
+    document.addEventListener("DOMContentLoaded", function() {
+        {% for record in records %}
+            processTimeline('{{ record.id }}');
+        {% endfor %}
+    });
+
+    function processTimeline(id) {
+        const container = document.getElementById(`timeline-container-${id}`);
+        const rawDiv = document.getElementById(`raw-data-${id}`);
+        
+        const rawVitals = rawDiv.querySelector('.raw-vitals').innerText;
+        const rawSaline = rawDiv.querySelector('.raw-saline').innerText;
+        const rawInjection = rawDiv.querySelector('.raw-injection').innerText;
+        const rawNotes = rawDiv.querySelector('.raw-notes').innerText;
+
+        // 1. Extract all unique timestamps
+        const timeRegex = /\[(\d{1,2}:\d{2}\s[AP]M)\]/g;
+        let allTimes = new Set();
+        
+        [rawVitals, rawSaline, rawInjection, rawNotes].forEach(text => {
+            let match;
+            while ((match = timeRegex.exec(text)) !== null) {
+                allTimes.add(match[1]);
+            }
+        });
+
+        if (allTimes.size === 0) {
+            container.innerHTML = '<p class="text-[10px] font-bold text-slate-300 italic p-4 text-center">No timeline data available for this date.</p>';
+            return;
+        }
+
+        // Sort Times
+        const sortedTimes = Array.from(allTimes); 
+
+        // 2. Build HTML
+        let html = '';
+
+        sortedTimes.forEach(time => {
+            const extractData = (fullText, timeStr) => {
+                if (!fullText) return null;
+                const escapeTime = timeStr.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp(`\\[${escapeTime}\\]\\s*(.*?)(?=\\[\\d{1,2}:\\d{2}\\s[AP]M\\]|$)`, 's');
+                const match = fullText.match(regex);
+                return match && match[1].trim() ? match[1].trim() : null;
+            };
+
+            const vData = extractData(rawVitals, time);
+            const sData = extractData(rawSaline, time);
+            const iData = extractData(rawInjection, time);
+            const nData = extractData(rawNotes, time);
+
+            if (vData || sData || iData || nData) {
+                html += `
+                <div class="timeline-entry">
+                    <div class="timeline-dot"></div>
+                    <div class="time-header"><i class="far fa-clock mr-1"></i> ${time}</div>
+                    <div class="data-grid">
+                        ${vData ? `<div class="data-box type-vitals"><span class="block text-[8px] text-red-400 font-black uppercase mb-1">Vitals</span>${vData}</div>` : ''}
+                        ${sData ? `<div class="data-box type-fluids"><span class="block text-[8px] text-blue-400 font-black uppercase mb-1">Fluids</span>${sData}</div>` : ''}
+                        ${iData ? `<div class="data-box type-meds"><span class="block text-[8px] text-emerald-500 font-black uppercase mb-1">Meds</span>${iData}</div>` : ''}
+                        ${nData ? `<div class="data-box type-notes"><span class="block text-[8px] text-amber-500 font-black uppercase mb-1">Notes</span>${nData}</div>` : ''}
+                    </div>
+                </div>`;
+            }
+        });
+
+        container.innerHTML = html;
+    }
+
+    {% if messages %}
+        {% for message in messages %}
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: "{% if message.tags == 'error' %}error{% else %}success{% endif %}",
+                title: "{{ message }}",
+                showConfirmButton: false,
+                timer: 2000,
+                customClass: { popup: 'rounded-xl' }
+            });
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock %}

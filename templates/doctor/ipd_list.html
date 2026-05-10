@@ -1,0 +1,144 @@
+{% extends 'doctor/doctor_dashboard.html' %}
+
+{% block content %}
+<div class="px-2 sm:px-6 py-4 sm:py-8 bg-slate-50 min-h-screen">
+    
+    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h2 class="text-lg sm:text-xl font-black text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                <i class="fas fa-procedures text-rose-500"></i> Admitted Patients (IPD)
+            </h2>
+            <p class="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Real-time ward status for Dr. {{ doctor.name }}</p>
+        </div>
+        <div class="bg-rose-50 text-rose-600 px-4 py-2 rounded-md border border-rose-100 text-xs font-black uppercase tracking-widest shadow-sm">
+            Total Admitted: {{ admissions.count }}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden">
+        
+        <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identification & Name</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ward / Bed</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Admission Date</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Diagnosis</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for adm in admissions %}
+                    <tr class="hover:bg-rose-50/30 transition-colors group">
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex items-start gap-3">
+                                <div class="h-10 w-10 rounded-md bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-200">
+                                    {{ adm.patient.name|make_list|first|upper }}
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <span class="inline-block w-fit px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded text-[9px] font-mono font-bold border border-rose-100 uppercase">
+                                        ADM: {{ adm.admission_id }}
+                                    </span>
+                                    <span class="inline-block w-fit px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-mono font-bold border border-slate-200 uppercase">
+                                        REG: {{ adm.patient.reg_number }}
+                                    </span>
+                                    <h4 class="text-sm font-black text-slate-800 mt-1 uppercase">{{ adm.patient.name }}</h4>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 align-top">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-black uppercase mt-1">
+                                <i class="fas fa-bed mr-1.5 text-rose-400"></i> {{ adm.bed.bed_number }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 align-top">
+                            <div class="mt-1">
+                                <span class="text-xs font-bold text-slate-700 block">{{ adm.admission_date|date:"d M, Y" }}</span>
+                                <p class="text-[10px] text-slate-400 font-medium">{{ adm.admission_date|date:"h:i A" }}</p>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 align-top">
+                            <p class="text-xs text-slate-600 font-medium leading-relaxed mt-1 line-clamp-2" title="{{ adm.diagnosis }}">
+                                {{ adm.diagnosis }}
+                            </p>
+                        </td>
+                        <td class="px-6 py-4 text-right align-top">
+                            <a href="{% url 'pulsehospital:doctor_view_ipd_history' adm.id %}" 
+                               class="inline-flex items-center px-4 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md hover:bg-rose-700 transition-all shadow-sm active:scale-95 mt-1">
+                                View Records <i class="fas fa-chevron-right ml-2 text-[8px]"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="md:hidden divide-y divide-slate-100">
+            {% for adm in admissions %}
+            <div class="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="h-12 w-12 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center font-black text-sm border border-rose-100">
+                        {{ adm.patient.name|make_list|first|upper }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap gap-1 mb-1">
+                            <span class="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded text-[8px] font-mono font-bold border border-rose-200 uppercase">
+                                ADM: {{ adm.admission_id }}
+                            </span>
+                            <span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-mono font-bold border border-slate-200 uppercase">
+                                REG: {{ adm.patient.reg_number }}
+                            </span>
+                        </div>
+                        <h4 class="text-sm font-black text-slate-800 uppercase truncate">{{ adm.patient.name }}</h4>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase border border-green-100 rounded">
+                            Bed: {{ adm.bed.bed_number }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-md border border-slate-100">
+                    <div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Admission Date</p>
+                        <p class="text-[11px] font-bold text-slate-700 mt-0.5">{{ adm.admission_date|date:"d M, Y" }}</p>
+                        <p class="text-[9px] text-slate-400">{{ adm.admission_date|date:"h:i A" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Diagnosis</p>
+                        <p class="text-[11px] font-bold text-slate-700 mt-0.5 italic line-clamp-2">"{{ adm.diagnosis }}"</p>
+                    </div>
+                </div>
+
+                <a href="{% url 'pulsehospital:doctor_view_ipd_history' adm.id %}" 
+                   class="flex items-center justify-center w-full py-3 bg-rose-600 text-white text-[11px] font-black uppercase tracking-[0.1em] rounded-md shadow-sm active:bg-rose-700">
+                    <i class="fas fa-file-medical-alt mr-2"></i> View Patient Daily Records
+                </a>
+            </div>
+            {% empty %}
+            <div class="p-12 text-center">
+                <div class="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-check-circle text-slate-300 text-xl"></i>
+                </div>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">No patients currently admitted</p>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @media (max-width: 768px) {
+        /* Mobile adjustment for diagnosis truncation */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+    }
+</style>
+{% endblock %}

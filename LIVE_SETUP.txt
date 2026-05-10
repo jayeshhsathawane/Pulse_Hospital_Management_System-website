@@ -1,6 +1,8 @@
 ==========================================================
     PULSE HOSPITAL PROJECT - LIVE DEPLOYMENT STEPS
 ==========================================================
+pulsesite project NAME\
+pulsehospital app name/
 
 STEP 1: LOCAL PREPARATION (Apne Computer Par)
 ----------------------------------------------------------

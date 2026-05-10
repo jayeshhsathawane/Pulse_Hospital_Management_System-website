@@ -1,50 +1,55 @@
 {% extends 'reception/reception_dashboard.html' %}
 {% block content %}
-<div class="space-y-4 max-w-6xl mx-auto px-2 pb-10 min-h-screen bg-slate-50/50">
+<!-- 🟢 Page Container (Responsive Padding & Green Harmony) -->
+<div class="space-y-4 max-w-7xl mx-auto px-2 sm:px-4 md:px-6 pb-10 min-h-screen bg-slate-50/30">
     
-    <div class="bg-white p-4 rounded-lg shadow-sm border-b-4 border-blue-600 flex flex-col lg:flex-row justify-between items-center gap-4">
-        <div class="flex items-center space-x-4">
-            <div class="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-100 shadow-inner">
-                <i class="fas fa-folder-open text-blue-600 text-lg"></i>
+    <!-- 🟢 Header Section (Green Border & Theme) -->
+    <div class="bg-white p-4 rounded-md shadow-sm border-b-4 border-green-600 flex flex-col lg:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-4 w-full lg:w-auto">
+            <div class="h-10 w-10 bg-green-50 rounded-md flex items-center justify-center border border-green-100 shadow-inner">
+                <i class="fas fa-folder-open text-green-600 text-lg"></i>
             </div>
             <div>
-                <h2 class="text-xl font-black tracking-tighter text-slate-800 uppercase italic leading-none">Discharge <span class="text-blue-600">Archives</span></h2>
-                <p class="text-slate-400 text-[9px] font-bold tracking-[0.2em] uppercase mt-1">Past IPD Patient Records & Files</p>
+                <h2 class="text-xl font-black tracking-tighter text-slate-800 uppercase italic leading-none">Discharge <span class="text-green-600">Archives</span></h2>
+                <p class="text-slate-400 text-[9px] font-black tracking-[0.2em] uppercase mt-1">Past IPD Patient Records & Files</p>
             </div>
         </div>
         
+        <!-- 🟢 Search Form (Responsive Layout) -->
         <form method="GET" class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-            <div class="relative flex-1 group">
-                <i class="fas fa-search absolute left-3 top-2.5 text-slate-300 group-focus-within:text-blue-500 transition-colors text-xs"></i>
-                <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Name or Reg ID..." 
-                       class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-lg outline-none text-[13px] transition-all font-semibold">
+            <div class="relative flex-1 group min-w-[200px]">
+                <i class="fas fa-search absolute left-3 top-2.5 text-slate-300 group-focus-within:text-green-600 transition-colors text-xs"></i>
+                <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Name, Reg ID or ADM ID..." 
+                       class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 focus:border-green-500 focus:bg-white rounded-md outline-none text-[13px] transition-all font-bold">
             </div>
             
-            <div class="flex items-center bg-slate-50 rounded-lg px-3 border border-slate-200 focus-within:border-blue-500 transition-all">
+            <div class="flex items-center bg-slate-50 rounded-md px-3 border border-slate-200 focus-within:border-green-500 transition-all">
                 <span class="text-[9px] font-black text-slate-400 uppercase mr-2 italic">Date:</span>
                 <input type="date" name="date" value="{{ filter_date }}" 
                        class="bg-transparent py-2 text-[13px] outline-none text-slate-700 font-black">
             </div>
 
             <div class="flex gap-2">
-                <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition shadow-md shadow-blue-100 active:scale-95">
+                <button type="submit" class="flex-1 sm:flex-none bg-green-600 text-white px-5 py-2 rounded-md font-black text-[10px] uppercase tracking-widest hover:bg-green-700 transition shadow-sm active:scale-95">
                     Search
                 </button>
-                <a href="{% url 'pulsehospital:ipd_discharge_history' %}" class="bg-slate-200 text-slate-500 px-3 py-2 rounded-lg flex items-center justify-center hover:bg-slate-300 transition shadow-sm">
+                <a href="{% url 'pulsehospital:ipd_discharge_history' %}" class="bg-slate-100 text-slate-500 px-3 py-2 rounded-md flex items-center justify-center hover:bg-slate-200 transition border border-slate-200">
                     <i class="fas fa-redo-alt text-xs"></i>
                 </a>
             </div>
         </form>
     </div>
 
-    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-lg">
+    <!-- 🟢 Main Content Area -->
+    <div class="bg-white rounded-md border border-slate-200 overflow-hidden shadow-sm">
         
+        <!-- 🟢 Desktop Table View -->
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
                     <tr>
-                        <th class="px-6 py-4">Admission Details</th>
-                        <th class="px-6 py-4">Patient Identity</th>
+                        <th class="px-6 py-4">Identification</th>
+                        <th class="px-6 py-4">Patient Name</th>
                         <th class="px-6 py-4">Medical Timeline</th>
                         <th class="px-6 py-4">Discharge Info</th>
                         <th class="px-6 py-4 text-center">Actions</th>
@@ -52,17 +57,22 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for record in history %}
-                    <tr class="hover:bg-blue-50/30 transition-all group">
-                        <td class="px-6 py-3 font-mono font-black text-blue-600 text-[11px] italic">
-                           {{ record.admission_id|default:"ADM-ID" }}
+                    <tr class="hover:bg-green-50/30 transition-all group">
+                        <td class="px-6 py-3">
+                            <div class="flex flex-col gap-1">
+                                <span class="font-mono font-black text-green-600 text-[10px] italic">
+                                    {{ record.admission_id|default:"ADM-ID" }}
+                                </span>
+                                <span class="inline-flex w-fit px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-mono font-bold border border-slate-200">
+                                    REG: {{ record.patient.reg_number|default:"N/A" }}
+                                </span>
+                            </div>
                         </td>
                         <td class="px-6 py-3">
-                            <div class="font-bold text-slate-800 uppercase text-[13px] group-hover:text-blue-700 transition-colors leading-tight">
+                            <div class="font-bold text-slate-700 uppercase text-[13px] group-hover:text-green-700 transition-colors leading-tight">
                                 {{ record.patient.name|default:"--Unknown--" }}
                             </div>
-                            <div class="inline-flex items-center px-1.5 py-0.5 bg-blue-50 text-blue-500 rounded font-mono text-[8px] font-bold mt-1">
-                                ID: {{ record.patient.reg_number|default:"N/A" }}
-                            </div>
+                            <div class="text-[9px] text-slate-400 font-bold mt-0.5">{{ record.patient.gender }} • {{ record.patient.age }}Y</div>
                         </td>
                         <td class="px-6 py-3">
                             <div class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Admitted On</div>
@@ -74,7 +84,7 @@
                         </td>
                         <td class="px-6 py-3 text-center">
                             <a href="{% url 'pulsehospital:ipd_patient_profile' record.id %}" 
-                               class="inline-flex items-center bg-slate-100 text-slate-500 px-4 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-slate-200">
+                               class="inline-flex items-center bg-white text-green-600 px-4 py-2 rounded-md font-black text-[9px] uppercase tracking-widest hover:bg-green-600 hover:text-white transition-all shadow-sm border border-green-200">
                                 <i class="fas fa-file-medical-alt mr-1.5"></i> Case File
                             </a>
                         </td>
@@ -83,11 +93,11 @@
                     <tr>
                         <td colspan="5" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center">
-                                <div class="h-14 w-14 bg-slate-50 rounded-full flex items-center justify-center mb-3">
-                                    <i class="fas fa-search-minus text-2xl text-slate-200"></i>
+                                <div class="h-12 w-12 bg-slate-50 rounded-md border border-slate-100 flex items-center justify-center mb-3">
+                                    <i class="fas fa-search-minus text-xl text-slate-200"></i>
                                 </div>
                                 <p class="text-slate-400 font-black uppercase tracking-widest text-[10px]">Zero discharge history found</p>
-                                <a href="{% url 'pulsehospital:ipd_discharge_history' %}" class="mt-2 text-blue-600 text-[9px] font-black uppercase underline">Reset Filters</a>
+                                <a href="{% url 'pulsehospital:ipd_discharge_history' %}" class="mt-2 text-green-600 text-[9px] font-black uppercase underline">Reset Filters</a>
                             </div>
                         </td>
                     </tr>
@@ -96,16 +106,17 @@
             </table>
         </div>
 
+        <!-- 🟢 Mobile Card View (Optimized for Small Screens) -->
         <div class="md:hidden divide-y divide-slate-100">
             {% for record in history %}
-            <div class="p-4 space-y-3">
+            <div class="p-4 space-y-3 bg-white">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="text-[8px] font-black text-blue-500 uppercase tracking-widest leading-none mb-1"> {{ record.admission_id }}</p>
-                        <h4 class="text-[15px] font-black text-slate-800 tracking-tight uppercase leading-none">{{ record.patient.name }}</h4>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-[8px] text-slate-400 font-bold uppercase">{{ record.patient.gender }} • {{ record.patient.age }}Y</span>
-                            <span class="px-1 py-0.5 bg-slate-100 text-slate-500 rounded font-mono text-[8px] font-bold">ID: {{ record.patient.reg_number }}</span>
+                        <p class="text-[8px] font-black text-green-600 uppercase tracking-widest leading-none mb-1"> {{ record.admission_id }}</p>
+                        <h4 class="text-[14px] font-black text-slate-800 tracking-tight uppercase leading-none">{{ record.patient.name }}</h4>
+                        <div class="flex items-center gap-2 mt-1.5">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">{{ record.patient.gender }} • {{ record.patient.age }}Y</span>
+                            <span class="px-1.5 py-0.5 bg-slate-50 text-slate-500 rounded-sm font-mono text-[9px] font-bold border border-slate-100">ID: {{ record.patient.reg_number }}</span>
                         </div>
                     </div>
                     <div class="text-right">
@@ -114,7 +125,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-md border border-slate-100">
                     <div>
                         <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest">Admission</p>
                         <p class="text-[10px] font-bold text-slate-700">{{ record.admission_date|date:"d M Y" }}</p>
@@ -126,10 +137,14 @@
                 </div>
 
                 <a href="{% url 'pulsehospital:ipd_patient_profile' record.id %}" 
-                   class="block w-full text-center bg-slate-900 text-white py-3 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md active:scale-95 transition-all">
+                   class="block w-full text-center bg-green-600 text-white py-2.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all">
                     Clinical Case Summary
                 </a>
             </div>
+            {% empty %}
+             <div class="p-8 text-center bg-white">
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-wider">No results found</p>
+             </div>
             {% endfor %}
         </div>
     </div>

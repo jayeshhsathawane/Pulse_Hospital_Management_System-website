@@ -2,77 +2,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Print Discharge - {{ data.profile.name }}</title>
+    <title>Print Discharge</title>
     <style>
-        /* Exact same styling as Doctor's print format */
-        @media print {
-            @page { margin: 0; }
-            body { margin: 0; padding: 0; background: white; }
-            .no-print { display: none; }
-        }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px 60px; color: black; }
-        .header-title { text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-top: 150px; margin-bottom: 20px; }
-        .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; line-height: 1.8; }
-        .table-investigation { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid black; }
-        .table-investigation td { border: 1px solid black; padding: 8px; font-size: 14px; }
-        .section-title { text-decoration: underline; font-weight: bold; margin-bottom: 10px; display: block; }
-        .content-box { margin-bottom: 20px; white-space: pre-line; font-size: 15px; }
-        .footer-sig { margin-top: 80px; text-align: right; }
+        /* 🖨️ Professional Boxed Print Format */
+        body { background-color: white; margin: 0; padding: 20px; font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; }
+        .print-table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 15px; table-layout: fixed; border: 1px solid black; }
+        .print-table th, .print-table td { border: 1px solid black; padding: 6px; text-align: left; font-size: 10pt; vertical-align: top; }
+        .print-table th { background-color: #f0f0f0 !important; font-weight: bold; text-transform: uppercase; font-size: 9pt; }
+        .section-header { font-weight: bold; text-decoration: underline; margin-top: 20px; margin-bottom: 5px; text-transform: uppercase; font-size: 12px; }
+        .col-sr { width: 5%; text-align: center; }
+        .col-name { width: 35%; }
+        .col-freq { width: 20%; font-weight: bold; text-align: center; }
+        .col-dose { width: 25%; }
+        .col-dur { width: 15%; text-align: center; }
     </style>
 </head>
-<body onload="window.print()">
-
-    <div class="header-title">
-        <h2 style="margin: 0; font-size: 24px;">DISCHARGE CARD</h2>
+<body>
+    <div style="text-align: center; border-bottom: 2px solid black; margin-bottom: 15px;">
+      <h2 style="font-size: 20px; font-weight: 900; margin: 0; padding-bottom: 5px;">DISCHARGE SUMMARY</h2>
     </div>
-
-    <div class="info-grid">
-        <div>
-            <p><strong>Name of Patient:</strong> {{ data.profile.name }}</p>
-            <p><strong>Age / Gender:</strong> {{ data.profile.age }}Y / {{ data.profile.gender }}</p>
-            <p><strong>Address:</strong> {{ data.profile.address|default:"--" }}</p>
-            <p><strong>Date of Admission:</strong> {{ data.record.date_of_admission|date:"d M Y h:i A" }}</p>
-        </div>
-        <div style="text-align: right;">
-            <p><strong>Reg ID:</strong> {{ data.profile.reg_number }}</p>
-            <p><strong>Consultant:</strong>  {{ doctor_full_name|upper }}</p>
-            <p><strong>Discharge Date:</strong> {{ data.record.discharge_date|date:"d M Y"|default:current_time|date:"d M Y" }}</p>
-        </div>
-    </div>
-
-    <h4 class="section-title">KEY INVESTIGATIONS:</h4>
-    <table class="table-investigation">
-        <tr>
-            <td><strong>Hb:</strong> {{ data.record.hb|default:"--" }} gm/dl</td>
-            <td><strong>TLC:</strong> {{ data.record.tlc|default:"--" }}</td>
-            <td><strong>Platelets:</strong> {{ data.record.platelets|default:"--" }}</td>
-        </tr>
-        <tr>
-            <td><strong>BUL:</strong> {{ data.record.bul|default:"--" }}</td>
-            <td><strong>Creatinine:</strong> {{ data.record.creatinine|default:"--" }}</td>
-            <td><strong>Status:</strong> Discharged</td>
-        </tr>
+    
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <tr>
+        <td style="width: 60%; padding: 4px;"><strong>Name:</strong> {{ data.profile.name|upper }}</td>
+        <td style="width: 40%; padding: 4px;"><strong>Reg No:</strong> {{ data.profile.reg_number }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>Age/Sex:</strong> {{ data.profile.age }}Y / {{ data.profile.gender }}</td>
+        <td style="padding: 4px;"><strong>DOA:</strong> {{ data.record.date_of_admission|date:"d M Y h:i A" }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>Consultant:</strong> {{ doctor_full_name|upper }}</td>
+        <td style="padding: 4px;"><strong>DOD:</strong> {{ discharge_date|date:"d M Y" }}</td>
+      </tr>
     </table>
 
-    <p><strong>TREATMENT GIVEN (IN-HOSPITAL):</strong></p>
-    <div class="content-box">{{ data.record.treatment_given|default:"As per clinical protocol" }}</div>
-
-    <p style="background: #f0f0f0; padding: 5px;"><strong>TREATMENT ADVISED ON DISCHARGE:</strong></p>
-    <div class="content-box" style="font-weight: bold; font-size: 16px;">{{ data.record.treatment_advised }}</div>
-
-    <p><strong>FOLLOW UP:</strong> {{ data.record.follow_up|default:"Visit after 7 days" }}</p>
-
-    <div class="footer-sig">
-        <p style="border-top: 1px solid black; display: inline-block; padding-top: 5px; width: 220px; text-align: center;">
-            Doctor's Signature <br> 
-            <small> {{ doctor_full_name|upper }}</small>
-        </p>
+    <div class="section-header">Clinical Summary</div>
+    <div style="margin-bottom: 10px;">
+        <p style="margin: 2px 0;"><strong>Complaints:</strong> {{ data.record.presenting_complaints }}</p>
+        <p style="margin: 2px 0;"><strong>Diagnosis:</strong> {{ data.record.final_diagnosis }}</p>
     </div>
 
-    <div class="no-print" style="margin-top: 20px; text-align: center;">
-        <button onclick="window.history.back()" style="padding: 10px 20px; cursor: pointer;">Go Back</button>
-        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; background: green; color: white; border: none;">Print Again</button>
+    <div class="section-header">Condition</div>
+    <div style="margin-bottom: 10px;">
+        <p style="margin: 2px 0;"><strong>On Admission:</strong> {{ data.record.condition_on_admission }}</p>
+        <p style="margin: 2px 0;"><strong>On Discharge:</strong> {{ data.record.condition_on_discharge }}</p>
     </div>
 
+    <div class="section-header">Investigations</div>
+    <p style="font-size: 10pt; line-height: 1.5;">
+        Hb: {{ data.record.hb|default:"-" }}, TLC: {{ data.record.tlc|default:"-" }}, Plt: {{ data.record.platelets|default:"-" }} | 
+        Creat: {{ data.record.creatinine|default:"-" }}, BUL: {{ data.record.bul|default:"-" }}
+        {% if data.record.lft %} | LFT: {{ data.record.lft }}{% endif %}
+        {% if data.record.xray %} | X-Ray: {{ data.record.xray }}{% endif %}
+        {% if data.record.ct_scan %} | CT Scan: {{ data.record.ct_scan }}{% endif %}
+        {% if data.record.mri %} | MRI: {{ data.record.mri }}{% endif %}
+    </p>
+
+    <div class="section-header">In-Hospital Treatment</div>
+    <table class="print-table">
+        <thead><tr><th class="col-sr">Sr</th><th class="col-name">Medicine Name</th><th class="col-freq">Frequency</th><th class="col-dose">Dose & Timing</th><th class="col-dur">Dur</th></tr></thead>
+        <tbody>
+            {% for med in hosp_meds %}
+            <tr>
+                <td class="col-sr">{{ forloop.counter }}</td>
+                <td class="col-name"><strong>{{ med.name }}</strong>{% if med.note %}<br><small>({{ med.note }})</small>{% endif %}</td>
+                <td class="col-freq">{{ med.freq }}</td>
+                <td class="col-dose">{{ med.dose }}<br><small>{{ med.time }}</small></td>
+                <td class="col-dur">{{ med.dur_val }} {{ med.dur_type }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">-- Nil --</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-header">Home Care Advice (Rx)</div>
+    <table class="print-table">
+        <thead><tr><th class="col-sr">Sr</th><th class="col-name">Medicine Name</th><th class="col-freq">Frequency</th><th class="col-dose">Dose & Timing</th><th class="col-dur">Dur</th></tr></thead>
+        <tbody>
+            {% for med in home_meds %}
+            <tr>
+                <td class="col-sr">{{ forloop.counter }}</td>
+                <td class="col-name"><strong>{{ med.name }}</strong>{% if med.note %}<br><small>({{ med.note }})</small>{% endif %}</td>
+                <td class="col-freq">{{ med.freq }}</td>
+                <td class="col-dose">{{ med.dose }}<br><small>{{ med.time }}</small></td>
+                <td class="col-dur">{{ med.dur_val }} {{ med.dur_type }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">-- Nil --</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-header">Advice & Follow Up</div>
+    <p><strong>Advice:</strong> {{ data.record.discharge_advice }}</p>
+    <p><strong>Follow Up:</strong> {{ data.record.follow_up }}</p>
+
+    <div style="margin-top: 50px; text-align: right;">
+        <strong>{{ doctor_full_name|upper }}</strong><br>(Consultant Signature)
+    </div>
+
+    <script>
+        // Jaise hi HTML background me load hogi, ye automatically print chala dega
+        window.onload = function() {
+            setTimeout(function() {
+                window.focus();
+                window.print();
+            }, 500); // 500ms delay to let tables render properly
+        };
+    </script>
 </body>
 </html>

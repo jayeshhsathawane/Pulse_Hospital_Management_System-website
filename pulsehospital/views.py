@@ -19,7 +19,7 @@ from django.db.models import Q
 from .models import Bill, IPD_Admission, Doctor 
 from django.utils import timezone
 import time
-
+from django.views.decorators.clickjacking import xframe_options_exempt
 
 
 # --- 1. LOGIN REDIRECT LOGIC ---
@@ -130,32 +130,39 @@ def doctor_dashboard(request):
         doctor = Doctor.objects.get(user=request.user)
     except Doctor.DoesNotExist:
         return redirect('pulsehospital:reception_dashboard')
+    
     today = date.today()
     
-    # --- NEW LOGIC START: Search and Date Filter ---
-    query = request.GET.get('q') # For searching by name or Reg ID
-    selected_date = request.GET.get('date') # For filtering by specific date
+    # 1. Monthly Count (Existing)
+    monthly_count = Appointment.objects.filter(
+        assigned_doctor=doctor, 
+        status='Completed',
+        appointment_date__month=today.month, 
+        appointment_date__year=today.year
+    ).count()
+
+    # 🟢 2. NEW: Count Active IPD Patients (Admitted & Not Discharged)
+    ipd_count = IPD_Admission.objects.filter(
+        attending_doctor=doctor, 
+        is_discharged=False
+    ).count()
+
+    # --- FILTER LOGIC (Existing) ---
+    query = request.GET.get('q') 
+    selected_date = request.GET.get('date') 
     
-    # Base query for confirmed appointments for this doctor
     appointments_queue = Appointment.objects.filter(assigned_doctor=doctor, status='Confirmed')
 
     if query:
-        # Search across patient name or registration number
         appointments_queue = appointments_queue.filter(
-            Q(patient_name__icontains=query) | Q(patient_profile__reg_number__icontains=query)
+            Q(patient_name__icontains=query) | 
+            Q(patient_profile__reg_number__icontains=query)
         )
     elif selected_date:
-        # Filter by the date selected in the picker (e.g., 2025-12-23)
         appointments_queue = appointments_queue.filter(appointment_date=selected_date)
     else:
-        # Default view: only show today's confirmed patients
         appointments_queue = appointments_queue.filter(appointment_date=today)
-        monthly_count = Appointment.objects.filter(
-        assigned_doctor=doctor, status='Completed',
-        appointment_date__month=today.month, appointment_date__year=today.year
-    ).count()
 
-    # Original logic for completed patients today
     completed_today = Appointment.objects.filter(
         assigned_doctor=doctor, status='Completed', appointment_date=today
     ).order_by('-booked_on')
@@ -165,8 +172,9 @@ def doctor_dashboard(request):
         'appointments': appointments_queue.order_by('appointment_time'),
         'completed_today': completed_today, 
         'monthly_patient_count': monthly_count,
+        'ipd_count': ipd_count,          # 🟢 Pass count to HTML
         'current_month_name': today.strftime('%B'),
-        'selected_date': selected_date or str(today) # Pass selected date back to template
+        'selected_date': selected_date or str(today)
     })
 
 # --- NEW FUNCTION: Doctor Delete Appointment ---
@@ -235,99 +243,119 @@ def patient_detail(request, pk):
     return render(request, 'doctor/patient_detail.html', context)
 
 # --- 7. DISCHARGE CARD ---
+
+@xframe_options_exempt
 @login_required
 def generate_discharge_card(request):
     reg_id = request.GET.get('reg_id')
-    patient_data = None
+    discharge_id = request.GET.get('discharge_id')
     
-    if reg_id:
+    patient_data = None
+    final_discharge_date = timezone.now()
+
+    def parse_meds(json_str):
+        try: return json.loads(json_str) if json_str else []
+        except: return []
+
+    def get_last_visit(profile):
+        return Appointment.objects.filter(patient_profile=profile).last()
+
+    if discharge_id:
+        saved_record = get_object_or_404(DischargeSummary, id=discharge_id)
+        profile = saved_record.patient
+        reg_id = profile.reg_number 
+        final_discharge_date = saved_record.date_of_discharge
+        
+        # 🟢 ADDED: Admission record fetch karna
+        admission_rec = IPD_Admission.objects.filter(patient=profile).last()
+
+        patient_data = {
+            'profile': profile, 
+            'is_saved': True, 
+            'record': saved_record,
+            'admission': admission_rec,  # ✅ Yeh key missing thi
+            'last_visit': get_last_visit(profile),
+            'hosp_meds': parse_meds(saved_record.treatment_given),
+            'home_meds': parse_meds(saved_record.treatment_advised)
+        }
+
+    elif reg_id:
         profile = PatientProfile.objects.filter(reg_number=reg_id).first()
+        if not profile:
+            admission = IPD_Admission.objects.filter(admission_id=reg_id).first()
+            if admission: profile = admission.patient
+
         if profile:
-            # 1. Check karo agar Discharge Summary pehle se saved hai
             saved_record = DischargeSummary.objects.filter(patient=profile).last()
-            
+            admission_rec = IPD_Admission.objects.filter(patient=profile).last() # Fetch admission
+
             if saved_record:
-                # Agar purana record hai, wahi dikhao
-                patient_data = {'profile': profile, 'is_saved': True, 'record': saved_record}
+                final_discharge_date = saved_record.date_of_discharge
+                patient_data = {
+                    'profile': profile, 
+                    'is_saved': True, 
+                    'record': saved_record,
+                    'admission': admission_rec, # ✅ Yeh key add ki
+                    'last_visit': get_last_visit(profile),
+                    'hosp_meds': parse_meds(saved_record.treatment_given),
+                    'home_meds': parse_meds(saved_record.treatment_advised)
+                }
             else:
-                # 2. Agar Naya Discharge hai (Not Saved)
-                last_visit = Appointment.objects.filter(patient_profile=profile).last()
-                
-                # 🟢 FIX START: Active Admission Data Fetch Karo
-                active_admission = IPD_Admission.objects.filter(patient=profile).last()
-                
-               
                 initial_record_data = {}
-                if active_admission:
-            
-                    local_admission_date = timezone.localtime(active_admission.admission_date)
-                    initial_record_data['date_of_admission'] = active_admission.admission_date
+                if admission_rec:
+                    initial_record_data['date_of_admission'] = admission_rec.admission_date
                 
                 patient_data = {
                     'profile': profile, 
                     'is_saved': False, 
-                    'last_visit': last_visit,
-                    'record': initial_record_data # 🟢 Ye line Date show karegi
+                    'admission': admission_rec, # ✅ Yeh key add ki
+                    'last_visit': get_last_visit(profile),
+                    'record': initial_record_data, 
+                    'hosp_meds': [], 
+                    'home_meds': []
                 }
-                # 🟢 FIX END
 
+    # 🟢 LOGIC C: SAVE DATA (POST)
     if request.method == 'POST':
         patient_profile = get_object_or_404(PatientProfile, id=request.POST.get('patient_id'))
-        
-        # --- 🟢 EXISTING LOGIC: Auto-Bed Release & IPD Status Update ---
         active_admission = IPD_Admission.objects.filter(patient=patient_profile, is_discharged=False).first()
         if active_admission:
             if active_admission.bed:
                 bed_obj = active_admission.bed
                 bed_obj.is_occupied = False
                 bed_obj.save()
-            
             active_admission.is_discharged = True
-            active_admission.discharge_date = timezone.now()
+            if not active_admission.discharge_date:
+                active_admission.discharge_date = timezone.now()
             active_admission.save()
 
-        # --- 🟢 UPDATED LOGIC: Saving All Fields (Old + New) ---
         DischargeSummary.objects.update_or_create(
             patient=patient_profile,
+            id=discharge_id if discharge_id else None, 
             defaults={
                 'doctor_name': request.user.get_full_name() or request.user.username,
-                # Ab POST request mein HTML se sahi date aayegi kyunki humne GET fix kar diya hai
                 'date_of_admission': request.POST.get('adm_date'), 
-                
-                # Naye Clinical Fields
                 'presenting_complaints': request.POST.get('presenting_complaints'),
                 'final_diagnosis': request.POST.get('final_diagnosis'),
-                
-                # Pehle wale Investigations
-                'hb': request.POST.get('hb'), 
-                'tlc': request.POST.get('tlc'),
-                'platelets': request.POST.get('platelets'), 
-                'bul': request.POST.get('bul'),
-                'creatinine': request.POST.get('creatinine'), 
-                
-                # Naye Investigation Fields
-                'lft': request.POST.get('lft'),
-                'xray': request.POST.get('xray'),
-                'ct_scan': request.POST.get('ct_scan'),
+                'hb': request.POST.get('hb'), 'tlc': request.POST.get('tlc'),
+                'platelets': request.POST.get('platelets'), 'bul': request.POST.get('bul'),
+                'creatinine': request.POST.get('creatinine'), 'lft': request.POST.get('lft'),
+                'xray': request.POST.get('xray'), 'ct_scan': request.POST.get('ct_scan'),
                 'mri': request.POST.get('mri'),
-
-                # Condition Fields
                 'condition_on_admission': request.POST.get('cond_admission'),
                 'condition_on_discharge': request.POST.get('cond_discharge'),
-
-                # Treatment & Follow-up
-                'treatment_given': request.POST.get('treatment_given'),
-                'treatment_advised': request.POST.get('treatment_advised'), 
+                'treatment_given': request.POST.get('treatment_given_json', '[]'),
+                'treatment_advised': request.POST.get('treatment_advised_json', '[]'),
+                'discharge_advice': request.POST.get('discharge_advice'),
                 'follow_up': request.POST.get('follow_up')
             }
         )
-        messages.success(request, "Discharge Details Saved & Bed Released Successfully!")
-        return redirect(f"{request.path}?reg_id={reg_id}")
+        messages.success(request, "Discharge Summary Saved Successfully!")
+        return redirect(f"{request.path}?reg_id={patient_profile.reg_number}")
 
     return render(request, 'doctor/discharge_card.html', {
-        'data': patient_data, 
-        'reg_id': reg_id, 
-        'current_time': timezone.now(),
+        'data': patient_data, 'reg_id': reg_id, 
+        'discharge_date': final_discharge_date, 
         'doctor_full_name': request.user.get_full_name() or request.user.username
     })
 
@@ -342,6 +370,109 @@ def dashboard_today(request):
         return render(request, 'doctor/doctor_dashboard.html', {'doctor': doctor, 'appointments': today_appointments})
     except Doctor.DoesNotExist:
         return redirect('pulsehospital:reception_dashboard')
+
+@login_required
+def doctor_admitted_patients(request):
+    # 1. Check karein ki user Doctor hai ya nahi
+    if not hasattr(request.user, 'doctor'):
+        messages.error(request, "Access Denied. Doctors only.")
+        return redirect('pulsehospital:dashboard')
+    doctor = request.user.doctor
+    admissions = IPD_Admission.objects.filter(
+        attending_doctor=doctor, 
+        is_discharged=False
+    ).order_by('-admission_date')
+    
+    return render(request, 'doctor/ipd_list.html', {
+        'admissions': admissions,
+        'doctor': doctor
+    })
+
+@login_required
+def doctor_view_ipd_history(request, adm_id):
+    # 1. Admission Record 
+    admission = get_object_or_404(IPD_Admission, id=adm_id)
+    
+    # 2. Security Check
+    if admission.attending_doctor.user != request.user:
+        messages.error(request, "You are not authorized to view this patient.")
+        return redirect('pulsehospital:doctor_admitted_patients')
+
+    # 3. Daily Records 
+    records = admission.daily_records.all().order_by('-date', '-id')
+    return render(request, 'doctor/ipd_details_view.html', {
+        'admission': admission,
+        'records': records
+    })
+
+@login_required
+def doctor_view_ipd_history(request, adm_id):
+    admission = get_object_or_404(IPD_Admission, id=adm_id)
+    
+    # Security Check
+    if admission.attending_doctor.user != request.user:
+        messages.error(request, "Authorized Access Only.")
+        return redirect('pulsehospital:doctor_admitted_patients')
+
+    # 🟢 LOGIC: Doctor Note Save Karna
+    if request.method == "POST":
+        record_id = request.POST.get('record_id')
+        doc_note = request.POST.get('doctor_note')
+        
+        if record_id and doc_note:
+            record = get_object_or_404(IPD_DailyRecord, id=record_id)
+            
+            # Current Time fetch karein (India Time)
+            local_now = timezone.localtime(timezone.now())
+            current_time_str = local_now.strftime("%I:%M %p")
+            
+            # Note ko format karein: [Time] (Doctor): Note
+            new_entry = f"[{current_time_str}] (Dr. Remarks): {doc_note}"
+            
+            # Purane notes me append karein
+            if record.other_notes:
+                record.other_notes = f"{record.other_notes}\n{new_entry}"
+            else:
+                record.other_notes = new_entry
+                
+            record.save()
+            messages.success(request, "Clinical Note Added Successfully")
+            return redirect('pulsehospital:doctor_view_ipd_history', adm_id=admission.id)
+
+    records = admission.daily_records.all().order_by('-date')
+    
+    return render(request, 'doctor/ipd_details_view.html', {
+        'admission': admission,
+        'records': records
+    })
+
+
+@login_required
+def view_discharged_case(request, discharge_id):
+    # 1. Discharge Summary Record nikalo
+    discharge_record = get_object_or_404(DischargeSummary, id=discharge_id)
+    patient = discharge_record.patient
+    
+    # 🟢 2. Admission Record Explicitly Find Karein (Jisme Bed Info hai)
+    # Logic: Wo Admission jiska patient same ho aur discharge date match kare
+    admission_obj = IPD_Admission.objects.filter(
+        patient=patient,
+        is_discharged=True
+    ).order_by('-discharge_date').first() 
+    # .first() latest wala uthayega agar dates match na bhi ho to
+
+    # 3. Daily Records Fetching
+    daily_records = IPD_DailyRecord.objects.filter(
+        admission__patient=patient,
+        date__gte=discharge_record.date_of_admission.date(),
+        date__lte=discharge_record.date_of_discharge.date()
+    ).order_by('-date')
+
+    return render(request, 'doctor/discharged_case_view.html', {
+        'discharge': discharge_record,
+        'admission': admission_obj,  # <--- Ye naya variable template me bhej rahe hain
+        'records': daily_records
+    })
 
 # --- 9. PHARMACY LOGIC ---
 @login_required
@@ -488,30 +619,44 @@ def ipd_admission_form(request):
         patient = PatientProfile.objects.filter(Q(phone=query) | Q(reg_number=query)).first()
     
     if request.method == 'POST':
-        bed_obj = Bed.objects.get(id=request.POST.get('bed_id'))
+        bed_id = request.POST.get('bed_id')
         patient_id = request.POST.get('patient_id')
-        patient_obj = PatientProfile.objects.get(id=patient_id)
-
-        # 🟢 NEW LOGIC: Admission ID = Patient Reg Number
-        # Purana NH0740 wala format comment karke naya logic apply kiya gaya hai
-        adm_id = patient_obj.reg_number 
-        IPD_Admission.objects.create(
-            patient=patient_obj, 
-            admission_id=adm_id, 
-            bed=bed_obj,
-            attending_doctor_id=request.POST.get('doctor_id'), 
-            diagnosis=request.POST.get('diagnosis'),
-            admission_date=timezone.now() # Current date and time
-        )
         
-        # Bed ko block karein
-        bed_obj.is_occupied = True
-        bed_obj.save()
-        
-        messages.success(request, f"Patient Admitted Successfully with ID: {adm_id}")
-        return redirect('pulsehospital:admitted_patients_list')
+        bed_obj = get_object_or_404(Bed, id=bed_id)
+        patient_obj = get_object_or_404(PatientProfile, id=patient_id)
 
-    # Available beds aur doctors ki list template ko bhej rahe hain
+        # 🟢 NEW DYNAMIC ADMISSION ID LOGIC
+        # 1. Pehle check karein ki is patient ki pehle kitni admissions ho chuki hain
+        previous_admissions_count = IPD_Admission.objects.filter(patient=patient_obj).count()
+        
+        # 2. Visit number generate karein (Pehli baar hai toh 1, doosri baar toh 2...)
+        visit_number = previous_admissions_count + 1
+        
+        # 3. Format: IPD/MED-2026-001/1 (Ya 2, 3 jitni baar admit ho)
+        # Isse database mein kabhi duplicate entry nahi aayegi
+        adm_id = f"IPD/{patient_obj.reg_number}/{visit_number}"
+
+        try:
+            IPD_Admission.objects.create(
+                patient=patient_obj, 
+                admission_id=adm_id, 
+                bed=bed_obj,
+                attending_doctor_id=request.POST.get('doctor_id'), 
+                diagnosis=request.POST.get('diagnosis'),
+                admission_date=timezone.now()
+            )
+            
+            # Bed ko block karein
+            bed_obj.is_occupied = True
+            bed_obj.save()
+            
+            messages.success(request, f"Patient Admitted Successfully! Admission ID: {adm_id}")
+            return redirect('pulsehospital:admitted_patients_list')
+            
+        except Exception as e:
+            messages.error(request, f"Admission Failed: {str(e)}")
+            return redirect('pulsehospital:ipd_admission_form')
+
     return render(request, 'ipd/admission_form.html', {
         'patient': patient, 
         'beds': Bed.objects.filter(is_occupied=False), 
@@ -532,45 +677,80 @@ def admitted_patients_list(request):
 @login_required
 def ipd_patient_profile(request, adm_id):
     admission = get_object_or_404(IPD_Admission, id=adm_id)
-    
-    # Today Date COmparisam
     today = timezone.now().date()
-    
+    local_now = timezone.localtime(timezone.now()) 
+    today = local_now.date()
+    current_time_str = local_now.strftime("%I:%M %p")
     if request.method == 'POST':
-        record_id = request.POST.get('record_id') # Hidden field form se
-        vitals = request.POST.get('vitals')
-        saline = request.POST.get('saline')
-        injection = request.POST.get('injection')
-        notes = request.POST.get('notes')
+        # 1. Get Data from Form
+        record_id = request.POST.get('record_id')
+        bp = request.POST.get('bp', '')
+        pulse = request.POST.get('pulse', '')
+        spo2 = request.POST.get('spo2', '')
+        temp = request.POST.get('temp', '')
+        new_vitals_entry = f"[{current_time_str}] BP:{bp}, Pulse:{pulse}, SpO2:{spo2}, Temp:{temp}" if (bp or pulse) else ""
+        saline = request.POST.get('saline', '').strip()
+        injection = request.POST.get('injection', '').strip()
+        notes = request.POST.get('notes', '').strip()
+
+        # Logic to Append Time to Text
+        def append_entry(old_text, new_text):
+            if not new_text: return old_text
+            entry = f"[{current_time_str}] {new_text}"
+            if old_text:
+                return f"{old_text}\n{entry}" 
+            return entry
+
+        # 🟢 CHECK: Kya Aaj ka Record Pehle se hai?
+        existing_today_record = IPD_DailyRecord.objects.filter(admission=admission, date=today).first()
 
         if record_id:
-            # 🟢 Edit Existing Record Logic
+            # --- EDIT MODE
             record = get_object_or_404(IPD_DailyRecord, id=record_id, admission=admission)
-            # Security Check: Sirf aaj ka record hi edit ho sakega
-            if record.date == today:
-                record.vitals = vitals
-                record.saline_details = saline
-                record.injection_details = injection
-                record.other_notes = notes
-                record.save()
+            record.vitals = request.POST.get('full_vitals_text') 
+            record.saline_details = saline
+            record.injection_details = injection
+            record.other_notes = notes
+            record.save()
+
+        elif existing_today_record:
+            # --- APPEND MODE  ---
+            if new_vitals_entry:
+                existing_today_record.vitals = append_entry(existing_today_record.vitals, f"BP:{bp}, P:{pulse}, SpO2:{spo2}, T:{temp}")
+            
+            existing_today_record.saline_details = append_entry(existing_today_record.saline_details, saline)
+            existing_today_record.injection_details = append_entry(existing_today_record.injection_details, injection)
+            existing_today_record.other_notes = append_entry(existing_today_record.other_notes, notes)
+            existing_today_record.save()
+            messages.success(request, f"Treatment updated for today at {current_time_str}")
+
         else:
-            # 🟢 Create New Record Logic
+            # --- CREATE MODE  ---
             IPD_DailyRecord.objects.create(
                 admission=admission, 
                 date=today,
-                saline_details=saline,
-                injection_details=injection, 
-                vitals=vitals, 
-                other_notes=notes
-            )      
+                saline_details=f"[{current_time_str}] {saline}" if saline else "",
+                injection_details=f"[{current_time_str}] {injection}" if injection else "", 
+                vitals=new_vitals_entry, 
+                other_notes=f"[{current_time_str}] {notes}" if notes else ""
+            )
+            messages.success(request, "New Daily Record Started")
+
         return redirect('pulsehospital:ipd_patient_profile', adm_id=admission.id)
+
+    records = admission.daily_records.all().order_by('-date')
+    return render(request, 'ipd/patient_profile.html', {
+        'admission': admission, 
+        'records': records,
+        'today': today
+    })
 
     # Records fetch 
     records = admission.daily_records.all().order_by('-date', '-id')
     context = {
         'admission': admission, 
         'records': records,
-        'today': today # Template mein {% if record.date == today %} ke liye
+        'today': today 
     }
     return render(request, 'ipd/patient_profile.html', context)
 
@@ -600,7 +780,7 @@ def ipd_discharge_history(request):
     })
 
 
-    #Reception Daily report
+  #Reception Daily report
 @login_required
 def daily_report(request):
     # Get parameters from request
@@ -669,34 +849,51 @@ def bulk_delete_medicine(request):
     return redirect('pulsehospital:pharmacy_dashboard')
 
 
-# Direct print by reception
+# # Direct print by reception
+@xframe_options_exempt
 @login_required
 def direct_print_discharge(request, reg_id):
-    """Receptionist directly prints the card generated by the doctor"""
-    # 1. Patient Profile dhoondo
-    profile = get_object_or_404(PatientProfile, reg_number=reg_id)
-    
-    # 2. Doctor ka save kiya hua data uthao
-    saved_record = DischargeSummary.objects.filter(patient=profile).last()
-    
-    # 3. Admission records (dates ke liye)
-    ipd_record = IPD_Admission.objects.filter(patient=profile).last()
-    if not saved_record:
-        messages.error(request, "Discharge Summary has not been prepared by the Doctor yet.")
-        return redirect('pulsehospital:ipd_discharge_history')
-    context = {
-        'data': {
-            'profile': profile,
-            'record': saved_record,
-        },
-        'doctor_full_name': saved_record.doctor_name or "Consultant",
-        'current_time': datetime.now(),
-        'ipd': ipd_record
-    }
-    return render(request, 'ipd/direct_print_discharge.html', context)
+    try:
+        # 1. Patient Profile
+        profile = PatientProfile.objects.filter(reg_number=reg_id).first()
+        if not profile:
+            # Agar patient nahi mila toh Iframe me alert bhejo
+            return HttpResponse("<script>alert('Error: Patient Profile not found!');</script>")
+        
+        # 2. Discharge Summary (Check if Doctor has generated it)
+        saved_record = DischargeSummary.objects.filter(patient=profile).last()
+        if not saved_record:
+            return HttpResponse("<script>alert('Error: Doctor ne abhi tak Discharge Summary generate nahi ki hai!');</script>")
 
+        # 3. JSON Medicine Parse
+        def parse_meds(json_str):
+            try:
+                return json.loads(json_str) if json_str else []
+            except:
+                return []
+                
+        hosp_meds = parse_meds(saved_record.treatment_given)
+        home_meds = parse_meds(saved_record.treatment_advised)
+
+        # 4. Context Send
+        context = {
+            'data': {
+                'profile': profile,
+                'record': saved_record,
+            },
+            'hosp_meds': hosp_meds,
+            'home_meds': home_meds,
+            'doctor_full_name': saved_record.doctor_name or "Consultant",
+            'discharge_date': saved_record.date_of_discharge 
+        }
+        
+        # 5. Render directly to print template
+        return render(request, 'ipd/direct_print_discharge.html', context)
+        
+    except Exception as e:
+        # Koi aur code error aaya toh alert aayega
+        return HttpResponse(f"<script>alert('System Error: {str(e)}');</script>")
 # operation Theater Management
-
 @login_required
 def ot_management(request):
     doctor = get_object_or_404(Doctor, user=request.user)
@@ -894,20 +1091,22 @@ def create_bill(request):
     query = request.GET.get('q')
     admission = None
     bill = None 
+    
     if query:
+        # 🟢 .last() use kiya hai taaki latest admission record uthaye
         admission = IPD_Admission.objects.filter(
             Q(patient__phone=query) | Q(patient__reg_number=query)
-        ).first()
+        ).last()
+
     if request.method == "POST":
         admission_id = request.POST.get('admission_id')
         admission = get_object_or_404(IPD_Admission, id=admission_id)
         
-        # 🟢 Sequential Bill Numbering Logic
+        # Bill Numbering
         last_bill_count = Bill.objects.all().count()
         new_bill_no = f"INV-{last_bill_count + 1:02d}" 
         
-        # 🟢 Correcting the attribute name as per your model
-        discharging_doctor = admission.attending_doctor # ✅ Fixed from assigned_doctor
+        discharging_doctor = admission.attending_doctor
 
         bill = Bill.objects.create(
             bill_number=new_bill_no,
@@ -924,6 +1123,7 @@ def create_bill(request):
             transaction_id=request.POST.get('transaction_id', '-')
         )
         
+        # 🟢 saved_success flag template mein auto-print trigger karega
         return render(request, 'Billing/create_bill.html', {
             'admission': admission, 
             'bill': bill,
@@ -938,657 +1138,23 @@ def create_bill(request):
         'today': timezone.now()
     })
 
-@login_required
 def bill_history(request):
-    """ Optional: View to see all generated bills """
+    query = request.GET.get('q')
     bills = Bill.objects.all().order_by('-bill_date')
+    
+    if query:
+        bills = bills.filter(
+            Q(bill_number__icontains=query) | 
+            Q(patient__name__icontains=query) | 
+            Q(patient__reg_number__icontains=query) |
+            Q(transaction_id__icontains=query)
+        )
+    
     return render(request, 'Billing/bill_history.html', {'bills': bills})
 
 # 🟢 New View for Direct Print Popup
+@xframe_options_exempt
 @login_required
 def print_bill(request, bill_id):
     bill = get_object_or_404(Bill, id=bill_id)
     return render(request, 'Billing/print_bill.html', {'bill': bill})
-
-
-
-
-# Rest Framework api testing
-# Rest Framework
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from .models import Medicine
-from .serializers import MedicineSerializer
-from .serializers import AppointmentSerializer, DoctorSerializer
-from .serializers import BookAppointmentSerializer
-from .serializers import IPDAdmissionSerializer, BillSerializer
-from .models import Bill
-from .serializers import (
-    BedSerializer, AdmitPatientSerializer, IPDAdmissionSerializer, 
-    OTBookingSerializer, AppointmentSerializer
-)
-from .models import Bed, IPD_Admission, OTBooking, Appointment
-from .serializers import PatientProfileSerializer
-from .serializers import IPDDailyRecordSerializer
-from .models import IPD_Admission, IPD_DailyRecord
-from .serializers import DischargeSummarySerializer, OTActionSerializer
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny]) # Login zaroori hai
-def medicine_api_list(request):
-    # 🕵️‍♂️ DEBUG: Terminal mein check karein ye print hota hai ya nahi
-    print("---------------------------------------")
-    print("DEBUG: API Function Call Hua!")
-    # 1. Search parameter uthao
-    search_query = request.GET.get('search')
-    print(f"DEBUG: Search Query Mila: '{search_query}'")
-
-    # 2. Filter Logic
-    if search_query:
-        medicines = Medicine.objects.filter(
-            Q(name__icontains=search_query) | 
-            Q(composition__icontains=search_query)
-        )
-    else:
-        medicines = Medicine.objects.all()
-
-    # 🕵️‍♂️ DEBUG: Count check
-    print(f"DEBUG: Total Medicines Found: {medicines.count()}")
-    print("---------------------------------------")
-
-    # 3. Serializer (HTML nahi, JSON bhejo)
-    serializer = MedicineSerializer(medicines, many=True)
-    
-    return Response(serializer.data)
-
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny]) 
-def login_api(request):
-    # 1. App se Username/Password lo
-    username = request.data.get('username')
-    password = request.data.get('password')
-
-    # 2. Check karo user sahi hai ya nahi
-    user = authenticate(username=username, password=password)
-
-    if user is not None:
-        # 3. Token banao ya purana wala lao
-        token, created = Token.objects.get_or_create(user=user)
-        
-        # 4. Role Pata karo 
-        role = 'unknown'
-        
-        # Check karte hain ki ye user kis table mein hai
-        if hasattr(user, 'doctor'): 
-            role = 'doctor'
-        elif hasattr(user, 'pharmacist'):
-            role = 'pharmacist'
-        elif hasattr(user, 'receptionist'): 
-            role = 'receptionist'
-        # Superuser check (Optional)
-        if user.is_superuser:
-            role = 'admin'
-
-        # 5. Token aur Role wapas bhejo
-        return Response({
-            'status': 'success',
-            'token': token.key,
-            'role': role,
-            'username': user.username
-        })
-    else:
-        return Response({'status': 'error', 'message': 'Invalid Username or Password'}, status=401)
-    
-
-# Logged in Doctor
-@api_view(['GET'])
-@permission_classes([IsAuthenticated]) # Sirf Logged in Doctor dekh sakega
-def doctor_dashboard_api(request):
-    
-    # 1. Check karo ki User Doctor hai ya nahi
-    try:
-        doctor = Doctor.objects.get(user=request.user)
-    except Doctor.DoesNotExist:
-        return Response({'error': 'You are not authorized as a Doctor'}, status=403)
-
-    today = date.today()
-    
-    # --- 2. FILTERS (Search & Date)---
-    query = request.GET.get('q') 
-    selected_date = request.GET.get('date')
-    
-    # Base Query: Sirf is Doctor ki Confirmed Appointments
-    appointments_queue = Appointment.objects.filter(assigned_doctor=doctor, status='Confirmed')
-
-    # Filter Logic
-    if query:
-        # Naam ya Reg ID se search
-        appointments_queue = appointments_queue.filter(
-            Q(patient_name__icontains=query) | Q(patient_profile__reg_number__icontains=query)
-        )
-    elif selected_date:
-        # Date select ki hai toh wo dikhao
-        appointments_queue = appointments_queue.filter(appointment_date=selected_date)
-    else:
-        # Default: Aaj ki list
-        appointments_queue = appointments_queue.filter(appointment_date=today)
-
-    # --- 3. Statistics (Monthly Count) ---
-    monthly_count = Appointment.objects.filter(
-        assigned_doctor=doctor, status='Completed',
-        appointment_date__month=today.month, appointment_date__year=today.year
-    ).count()
-
-    # --- 4. Completed Patients (Jo check ho chuke hain) ---
-    completed_today = Appointment.objects.filter(
-        assigned_doctor=doctor, status='Completed', appointment_date=today
-    ).order_by('-booked_on')
-
-    # --- 5. Data Pack karo (Serialization) ---
-    queue_serializer = AppointmentSerializer(appointments_queue.order_by('appointment_time'), many=True)
-    completed_serializer = AppointmentSerializer(completed_today, many=True)
-    doctor_serializer = DoctorSerializer(doctor)
-
-    # --- 6. Final JSON Response ---
-    return Response({
-        'doctor_info': doctor_serializer.data,
-        'stats': {
-            'monthly_patient_count': monthly_count,
-            'current_month': today.strftime('%B'),
-            'today_queue_count': appointments_queue.count()
-        },
-        'appointments_queue': queue_serializer.data,   
-        'completed_list': completed_serializer.data  
-    })
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def patient_checkup_api(request, pk):
-    # 1. Appointment dhundo
-    try:
-        appointment = Appointment.objects.get(pk=pk)
-    except Appointment.DoesNotExist:
-        return Response({'error': 'Appointment not found'}, status=404)
-
-    # Security: Check karo ki ye usi doctor ka patient hai
-    doctor = Doctor.objects.get(user=request.user)
-    if appointment.assigned_doctor != doctor:
-        return Response({'error': 'Not authorized to treat this patient'}, status=403)
-
-    # --- 🟢 GET Request: Data Dikhana (History + Details) ---
-    if request.method == 'GET':
-        # Patient ki purani history nikalo (Completed wali)
-        history = Appointment.objects.filter(
-            patient_profile=appointment.patient_profile, 
-            status='Completed'
-        ).exclude(id=pk).order_by('-appointment_date')
-        
-        # History ko JSON banayenge
-        history_serializer = AppointmentSerializer(history, many=True)
-        current_serializer = AppointmentSerializer(appointment)
-
-        return Response({
-            'patient_details': current_serializer.data,
-            'past_history': history_serializer.data,
-            # Agar pehle se kuch save hai to wo bhi bhejo
-            'saved_diagnosis': appointment.diagnosis,
-            'saved_symptoms': appointment.symptoms,
-            'saved_medication': appointment.medication_json
-        })
-
-    # --- 🔴 POST Request: Data Save Karna (Prescription) ---
-    elif request.method == 'POST':
-        # App se data aayega
-        data = request.data 
-
-        # 1. Basic Fields update
-        appointment.diagnosis = data.get('diagnosis', '')
-        appointment.symptoms = data.get('symptoms', '')
-        appointment.other_comorbidities = data.get('other_comorbidities', '')
-        
-        # 2. Medicine List (JSON Format mein aayegi)
-        # App bhejege: [{"name": "Dolo", "dose": "1-0-1"}, ...]
-        medicines = data.get('medication_json')
-        if medicines:
-            appointment.medication_json = medicines # Direct JSON save
-        
-        # 3. Status Complete karo
-        appointment.status = 'Completed'
-        appointment.save()
-
-        return Response({'status': 'success', 'message': 'Prescription Saved Successfully!'})
-
-# --- A. RECEPTION DASHBOARD API ---
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def reception_dashboard_api(request):
-    today = date.today()
-
-    # 1. Stats Calculate karo
-    pending_count = Appointment.objects.filter(status='Pending').count()
-    confirmed_today = Appointment.objects.filter(status='Confirmed', appointment_date=today).count()
-    completed_today = Appointment.objects.filter(status='Completed', appointment_date=today).count()
-    
-    # 2. Doctors List (Availability dikhane ke liye)
-    doctors = Doctor.objects.all()
-    doctor_data = []
-    for dr in doctors:
-        # Har doctor ke aaj ke patients count karo
-        patient_count = Appointment.objects.filter(
-            assigned_doctor=dr, 
-            appointment_date=today, 
-            status='Confirmed'
-        ).count()
-        
-        doctor_data.append({
-            'id': dr.id,
-            'name': dr.name,
-            'specialty': dr.specialty,
-            'today_patients': patient_count
-        })
-
-    # 3. JSON Response
-    return Response({
-        'stats': {
-            'pending_requests': pending_count,
-            'confirmed_today': confirmed_today,
-            'completed_today': completed_today,
-            'total_today': confirmed_today + completed_today
-        },
-        'doctors_status': doctor_data,
-        'today_date': today.strftime("%d %B %Y")
-    })
-
-
-# --- B. BOOK APPOINTMENT API (Walk-in) ---
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def book_appointment_api(request):
-    serializer = BookAppointmentSerializer(data=request.data)
-    
-    if serializer.is_valid():
-        data = serializer.validated_data
-        
-        # 1. Doctor dhundo
-        try:
-            doctor_obj = Doctor.objects.get(id=data['doctor_id'])
-        except Doctor.DoesNotExist:
-            return Response({'error': 'Invalid Doctor ID'}, status=400)
-
-        # 2. Patient Profile
-        dr_code = 'GYN' if 'gynec' in doctor_obj.specialty.lower() else 'MED'
-        
-        profile, created = PatientProfile.objects.get_or_create(
-            phone=data['phone'],
-            defaults={
-                'name': data['patient_name'],
-                'age': data['age'],
-                'gender': data.get('gender', 'M'), # ✅ Yahan Gender hona chahiye
-                'address': data.get('address', ''),
-                'assigned_doctor_code': dr_code
-            }
-        )
-        
-        if not created:
-            profile.age = data['age']
-            profile.address = data.get('address', '')
-            profile.save()
-
-        # 3. Appointment Create 
-        Appointment.objects.create(
-            patient_name=data['patient_name'],
-            phone=data['phone'],
-            age=data['age'],
-            patient_profile=profile,
-            assigned_doctor=doctor_obj,
-            appointment_date=date.today(),
-            appointment_time=datetime.now().time(),
-            status='Confirmed',
-            is_follow_up=not created,
-            bp=data.get('bp', ''),
-            pulse=data.get('pulse', ''),
-            sugar=data.get('sugar', '')
-        )
-
-        return Response({'status': 'success', 'message': 'Appointment Booked Successfully!'})
-    
-    return Response(serializer.errors, status=400)
-
-
-
-# --- A. SEARCH ADMITTED PATIENT (GET) ---
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def search_admitted_patient_api(request):
-    query = request.GET.get('search')
-    
-    if query:
-        # find Phone or Reg Number 
-        admissions = IPD_Admission.objects.filter(
-            Q(patient__phone__icontains=query) | 
-            Q(patient__reg_number__icontains=query),
-            is_discharged=False # Sirf jo abhi admitted hain
-        )
-        serializer = IPDAdmissionSerializer(admissions, many=True)
-        return Response(serializer.data)
-    
-    return Response([])
-
-# --- B. CREATE BILL API (POST) ---
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_bill_api(request):
-    # 1. INV Number Generate Logic
-    last_bill_count = Bill.objects.all().count()
-    new_bill_no = f"INV-{last_bill_count + 1:02d}"
-    
-    # 2. Data Tayyar karo
-    data = request.data.copy()
-    data['bill_number'] = new_bill_no
-    
-    # 3. Admission ID se Doctor Pata karo (Discharged By)
-    try:
-        admission = IPD_Admission.objects.get(id=data.get('admission'))
-        # Discharging doctor wahi hoga jo admission ke waqt tha
-        discharging_doctor = admission.attending_doctor 
-    except IPD_Admission.DoesNotExist:
-        return Response({'error': 'Invalid Admission ID'}, status=400)
-
-    # 4. Save Bill
-    serializer = BillSerializer(data=data)
-    if serializer.is_valid():
-        bill = serializer.save(
-            bill_number=new_bill_no,
-            patient=admission.patient,
-            discharged_by=discharging_doctor # Doctor name save
-        )
-        return Response({
-            'status': 'success', 
-            'message': 'Bill Generated Successfully!',
-            'bill_number': bill.bill_number,
-            'total': bill.total_amount
-        })
-    
-    return Response(serializer.errors, status=400)
-
-
-# A. Bed Status (Red/Green Grid)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def bed_dashboard_api(request):
-    beds = Bed.objects.all().order_by('bed_number')
-    serializer = BedSerializer(beds, many=True)
-    
-    return Response({
-        'stats': {
-            'total': beds.count(),
-            'occupied': beds.filter(is_occupied=True).count(),
-            'available': beds.filter(is_occupied=False).count()
-        },
-        'beds': serializer.data
-    })
-
-# B. Admit Patient (Action)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def admit_patient_api(request):
-    serializer = AdmitPatientSerializer(data=request.data)
-    if serializer.is_valid():
-        data = serializer.validated_data
-        try:
-            patient = PatientProfile.objects.get(id=data['patient_id'])
-            bed = Bed.objects.get(id=data['bed_id'])
-            
-            if bed.is_occupied:
-                return Response({'error': 'Bed is already occupied!'}, status=400)
-
-            # Admission Create karo
-            IPD_Admission.objects.create(
-                patient=patient,
-                admission_id=patient.reg_number, # Logic same as website
-                bed=bed,
-                attending_doctor_id=data['doctor_id'],
-                diagnosis=data.get('diagnosis', ''),
-                admission_date=timezone.now()
-            )
-            
-            # Bed Block karo
-            bed.is_occupied = True
-            bed.save()
-            
-            return Response({'status': 'success', 'message': f'Patient Admitted to Bed {bed.bed_number}'})
-            
-        except Exception as e:
-            return Response({'error': str(e)}, status=400)
-    
-    return Response(serializer.errors, status=400)
-
-
-# ==========================================
-# 🕒 2. PENDING REQUESTS MANAGEMENT
-# ==========================================
-
-# A. List Pending Requests
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def pending_requests_api(request):
-    # Website logic: Filter status='Pending'
-    pending = Appointment.objects.filter(status='Pending').order_by('-booked_on')
-    serializer = AppointmentSerializer(pending, many=True)
-    return Response(serializer.data)
-
-# B. Confirm Appointment (Action)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def confirm_request_api(request, pk):
-    try:
-        appointment = Appointment.objects.get(pk=pk, status='Pending')
-        doctor_id = request.data.get('doctor_id') # Receptionist select karegi doctor
-        
-        if not doctor_id:
-            return Response({'error': 'Please select a Doctor'}, status=400)
-
-        # 1. Doctor Assign karo
-        doctor_obj = Doctor.objects.get(id=doctor_id)
-        appointment.assigned_doctor = doctor_obj
-        
-        # 2. Patient Profile Create/Get karo (Reg ID generate hogi)
-        dr_code = 'GYN' if 'gynec' in doctor_obj.specialty.lower() else 'MED'
-        profile, created = PatientProfile.objects.get_or_create(
-            phone=appointment.phone,
-            defaults={
-                'name': appointment.patient_name,
-                'age': appointment.age,
-                'assigned_doctor_code': dr_code
-            }
-        )
-        
-        # 3. Status Update
-        appointment.patient_profile = profile
-        appointment.status = 'Confirmed'
-        appointment.is_follow_up = not created
-        appointment.save()
-        
-        return Response({'status': 'success', 'message': 'Appointment Confirmed!'})
-
-    except Appointment.DoesNotExist:
-        return Response({'error': 'Request not found'}, status=404)
-
-
-# ==========================================
-# 🔪 3. OT SCHEDULE API
-# ==========================================
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def ot_schedule_api(request):
-    today = date.today()
-    # Logic: Aaj ki aur aane wali surgeries dikhao
-    upcoming_ot = OTBooking.objects.filter(
-        ot_date__gte=today, 
-        status='Scheduled'
-    ).order_by('ot_date', 'ot_time')
-    
-    serializer = OTBookingSerializer(upcoming_ot, many=True)
-    return Response(serializer.data)
-
-
-# 🟢 MASTER PATIENT SEARCH (General Search)
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def search_patient_profile_api(request):
-    query = request.GET.get('search')
-    
-    if query:
-        # Patient ko Naam, Phone ya Reg ID se dhundo
-        patients = PatientProfile.objects.filter(
-            Q(name__icontains=query) | 
-            Q(phone__icontains=query) | 
-            Q(reg_number__icontains=query)
-        )
-        
-        # Yahan hum wo Serializer use kar rahe hain jo 'miss' ho gaya tha
-        serializer = PatientProfileSerializer(patients, many=True)
-        return Response(serializer.data)
-    
-    return Response([])
-
-# 🟢 RECEPTION: IPD DAILY ROUNDS (Treatment Entry)
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def ipd_daily_round_api(request, admission_id):
-    # 1. Pehle check karo Admission exist karta hai ya nahi
-    try:
-        admission = IPD_Admission.objects.get(id=admission_id)
-    except IPD_Admission.DoesNotExist:
-        return Response({'error': 'Admission Record Not Found'}, status=404)
-
-    # --- A. GET REQUEST: History Dekhna ---
-    if request.method == 'GET':
-        # Sirf isi patient ke records nikalo, naya pehle (Reverse order)
-        records = IPD_DailyRecord.objects.filter(admission=admission).order_by('-date', '-id')
-        serializer = IPDDailyRecordSerializer(records, many=True)
-        return Response({
-            'patient_name': admission.patient.name,
-            'bed_number': admission.bed.bed_number,
-            'records': serializer.data
-        })
-
-    # --- B. POST REQUEST: Naya Treatment Add Karna ---
-    elif request.method == 'POST':
-        serializer = IPDDailyRecordSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            # 🟢 Important: Admission object hum code se jodenge (User se nahi mangenge)
-            serializer.save(admission=admission, date=date.today())
-            return Response({'status': 'success', 'message': 'Daily Treatment Record Added!'})
-        
-        return Response(serializer.errors, status=400)
-
-
-# 🟢 RECEPTION: DISCHARGE PATIENT API
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def discharge_patient_api(request, admission_id):
-    try:
-        # 1. Admission Record dhundo
-        admission = IPD_Admission.objects.get(id=admission_id, is_discharged=False)
-        
-        # 2. Bed dhundo jo is patient ke paas hai
-        bed = admission.bed
-        
-        # 3. Discharge Updates
-        admission.is_discharged = True
-        admission.discharge_date = timezone.now()
-        admission.save()
-        
-        # 4. Bed Free karo (Green Signal 🟢)
-        bed.is_occupied = False
-        bed.save()
-        
-        return Response({
-            'status': 'success', 
-            'message': f'Patient Discharged. Bed {bed.bed_number} is now Available.'
-        })
-
-    except IPD_Admission.DoesNotExist:
-        return Response({'error': 'Patient already discharged or Invalid ID'}, status=400)
-    
-
-    # 📄 DOCTOR: DISCHARGE SUMMARY
-# ==========================================
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def save_discharge_summary_api(request):
-    # Patient Reg ID se dhundenge (Mobile se Reg ID aayegi)
-    reg_id = request.data.get('reg_id')
-    
-    try:
-        profile = PatientProfile.objects.get(reg_number=reg_id)
-        
-        # Data prepare karo
-        data = request.data.copy()
-        data['patient'] = profile.id
-        data['doctor_name'] = request.user.get_full_name()
-        
-        # Save karo
-        serializer = DischargeSummarySerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            
-            # Optional: Agar Discharge Summary ban gayi, toh Bed release signal de sakte hain
-            # Lekin usually Doctor summary banata hai, Reception discharge karti hai.
-            
-            return Response({'status': 'success', 'message': 'Discharge Summary Saved!'})
-        return Response(serializer.errors, status=400)
-        
-    except PatientProfile.DoesNotExist:
-        return Response({'error': 'Invalid Registration Number'}, status=404)
-
-
-# ==========================================
-# 🔪 DOCTOR: OT MANAGEMENT
-# ==========================================
-
-# 1. Book Surgery (POST)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def book_surgery_api(request):
-    # Doctor ID user se lenge
-    try:
-        doctor = Doctor.objects.get(user=request.user)
-        data = request.data.copy()
-        data['doctor'] = doctor.id
-        
-        serializer = OTActionSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save(status='Scheduled')
-            return Response({'status': 'success', 'message': 'Surgery Scheduled!'})
-        return Response(serializer.errors, status=400)
-    except Doctor.DoesNotExist:
-        return Response({'error': 'You are not a Doctor'}, status=403)
-
-# 2. Save OT Notes & Complete (POST)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def save_ot_notes_api(request, ot_id):
-    try:
-        ot_record = OTBooking.objects.get(id=ot_id)
-        
-        ot_record.procedure_description = request.data.get('procedure')
-        ot_record.surgical_findings = request.data.get('findings')
-        ot_record.anaesthesia_type = request.data.get('anaesthesia')
-        ot_record.status = 'Completed' # 🟢 Status Complete ho jayega
-        ot_record.save()
-        
-        return Response({'status': 'success', 'message': 'Operation Notes Saved & Completed!'})
-    except OTBooking.DoesNotExist:
-        return Response({'error': 'OT Record not found'}, status=404)

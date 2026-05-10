@@ -1,9 +1,11 @@
 from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
 
 app_name = 'pulsehospital'
 
 urlpatterns = [
+    path('stafflogin/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     # --- Website Main Pages ---
     path('', views.home, name='home'),
     path('services/', views.services, name='services'),
@@ -12,7 +14,7 @@ urlpatterns = [
     path('gallery/', views.gallery, name='gallery'),
     path('contact/', views.contact, name='contact'),
     
-    # --- LOGIN REDIRECT LOGIC (Most Important) ---
+    # --- LOGIN REDIRECT LOGIC ---
     # After login, the system will use this path to decide which dashboard to show
     path('dashboard-redirect/', views.dashboard_redirect, name='dashboard_redirect'),
     # path('start-consultation/<int:pk>/', views.start_consultation, name='start_consultation'),
@@ -36,7 +38,10 @@ urlpatterns = [
     path('dashboard/patient/<int:pk>/', views.patient_detail, name='patient_detail'),
     path('dashboard/history/', views.patient_history, name='patient_history'),
     path('dashboard/delete-appointment/<int:pk>/', views.doctor_delete_appointment, name='doctor_delete_appointment'),
-
+    path('doctor/admitted-patients/', views.doctor_admitted_patients, name='doctor_admitted_patients'),
+    path('doctor/ipd-history/<int:adm_id>/', views.doctor_view_ipd_history, name='doctor_view_ipd_history'),
+    path('doctor/discharged-case/<int:discharge_id>/', views.view_discharged_case, name='view_discharged_case'),
+    
     #Pharmacy  Management URLs
     path('pharmacy/dashboard/', views.pharmacy_dashboard, name='pharmacy_dashboard'),
     path('pharmacy/edit/<int:pk>/', views.edit_medicine, name='edit_medicine'),
@@ -72,8 +77,8 @@ urlpatterns = [
     # 4. Bed Dashboard (Visual Red/Green Grid ke liye)
     path('ipd/beds/', views.ipd_bed_dashboard, name='ipd_bed_dashboard'),
 
-# # 🏥 Operation Theatre (OT) Management 
-#     # Doctor's OT Dashboard (Surgery list)
+#  Operation Theatre (OT) Management 
+# Doctor's OT Dashboard (Surgery list)
     path('ot/ot-management/', views.ot_management, name='ot_management'),
     
     # Action to schedule surgery from Prescription page
@@ -89,39 +94,39 @@ urlpatterns = [
 
 
 
-#api testing
-   path('api/mobile/medicines/', views.medicine_api_list, name='medicine_api_list'),
-   path('api/mobile/login/', views.login_api, name='login_api'),
+# #api testing
+#    path('api/mobile/medicines/', views.medicine_api_list, name='medicine_api_list'),
+#    path('api/mobile/login/', views.login_api, name='login_api'),
 
-   # 🟢 Doctor Dashboard API
-    path('api/mobile/doctor/dashboard/', views.doctor_dashboard_api, name='doctor_dashboard_api'),
-    # 🟢 Checkup Screen API (GET = Details, POST = Save)
-    path('api/mobile/doctor/checkup/<int:pk>/', views.patient_checkup_api, name='patient_checkup_api'),
+#    # 🟢 Doctor Dashboard API
+#     path('api/mobile/doctor/dashboard/', views.doctor_dashboard_api, name='doctor_dashboard_api'),
+#     # 🟢 Checkup Screen API (GET = Details, POST = Save)
+#     path('api/mobile/doctor/checkup/<int:pk>/', views.patient_checkup_api, name='patient_checkup_api'),
     
-    # 🟢 Reception APIs
-    path('api/mobile/reception/dashboard/', views.reception_dashboard_api, name='reception_dashboard_api'),
-    path('api/mobile/reception/book/', views.book_appointment_api, name='book_appointment_api'),
+#     # 🟢 Reception APIs
+#     path('api/mobile/reception/dashboard/', views.reception_dashboard_api, name='reception_dashboard_api'),
+#     path('api/mobile/reception/book/', views.book_appointment_api, name='book_appointment_api'),
 
-    # 🟢 Billing APIs
-    path('api/mobile/billing/search-patient/', views.search_admitted_patient_api, name='search_admitted_patient_api'),
-    path('api/mobile/billing/create/', views.create_bill_api, name='create_bill_api'),
+#     # 🟢 Billing APIs
+#     path('api/mobile/billing/search-patient/', views.search_admitted_patient_api, name='search_admitted_patient_api'),
+#     path('api/mobile/billing/create/', views.create_bill_api, name='create_bill_api'),
 
-    # 🟢 1. IPD & Bed Management
-    path('api/mobile/reception/beds/', views.bed_dashboard_api, name='bed_dashboard_api'),
-    path('api/mobile/reception/admit/', views.admit_patient_api, name='admit_patient_api'),
+#     # 🟢 1. IPD & Bed Management
+#     path('api/mobile/reception/beds/', views.bed_dashboard_api, name='bed_dashboard_api'),
+#     path('api/mobile/reception/admit/', views.admit_patient_api, name='admit_patient_api'),
 
-    # 🟢 2. Pending Requests
-    path('api/mobile/reception/pending/', views.pending_requests_api, name='pending_requests_api'),
-    path('api/mobile/reception/confirm/<int:pk>/', views.confirm_request_api, name='confirm_request_api'),
-    path('api/mobile/reception/search-master/', views.search_patient_profile_api, name='search_patient_profile_api'),
-    path('api/mobile/reception/ipd-rounds/<int:admission_id>/', views.ipd_daily_round_api, name='ipd_daily_round_api'),
-    path('api/mobile/reception/discharge/<int:admission_id>/', views.discharge_patient_api, name='discharge_patient_api'),
+#     # 🟢 2. Pending Requests
+#     path('api/mobile/reception/pending/', views.pending_requests_api, name='pending_requests_api'),
+#     path('api/mobile/reception/confirm/<int:pk>/', views.confirm_request_api, name='confirm_request_api'),
+#     path('api/mobile/reception/search-master/', views.search_patient_profile_api, name='search_patient_profile_api'),
+#     path('api/mobile/reception/ipd-rounds/<int:admission_id>/', views.ipd_daily_round_api, name='ipd_daily_round_api'),
+#     path('api/mobile/reception/discharge/<int:admission_id>/', views.discharge_patient_api, name='discharge_patient_api'),
 
-    # 🟢 3. OT Schedule
-    path('api/mobile/reception/ot-schedule/', views.ot_schedule_api, name='ot_schedule_api'),
+#     # 🟢 3. OT Schedule
+#     path('api/mobile/reception/ot-schedule/', views.ot_schedule_api, name='ot_schedule_api'),
 
-    # 🟢 Doctor Discharge & OT
-    path('api/mobile/doctor/discharge-summary/', views.save_discharge_summary_api, name='save_discharge_summary_api'),
-    path('api/mobile/doctor/book-ot/', views.book_surgery_api, name='book_surgery_api'),
-    path('api/mobile/doctor/ot-notes/<int:ot_id>/', views.save_ot_notes_api, name='save_ot_notes_api'),
+#     # 🟢 Doctor Discharge & OT
+#     path('api/mobile/doctor/discharge-summary/', views.save_discharge_summary_api, name='save_discharge_summary_api'),
+#     path('api/mobile/doctor/book-ot/', views.book_surgery_api, name='book_surgery_api'),
+#     path('api/mobile/doctor/ot-notes/<int:ot_id>/', views.save_ot_notes_api, name='save_ot_notes_api'),
 ]

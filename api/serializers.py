@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from .models import (
+from pulsehospital.models import (
     Medicine, Doctor, Appointment, PatientProfile, 
     IPD_Admission, Bed, IPD_DailyRecord, Bill, OTBooking
 )
-from .models import IPD_Admission, Bill
-from .models import OTBooking
-from .models import DischargeSummary, OTBooking
+from pulsehospital.models import IPD_Admission, Bill
+from pulsehospital.models import OTBooking
+from pulsehospital.models import DischargeSummary, OTBooking
 # ==========================================
 # 1. 💊 PHARMACY & COMMON SERIALIZERS
 # ==========================================

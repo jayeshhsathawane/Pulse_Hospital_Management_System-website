@@ -123,23 +123,33 @@ class Bed(models.Model):
 class IPD_Admission(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     admission_id = models.CharField(max_length=50, unique=True) # MH/BHU/NH0740/...
-    bed = models.OneToOneField(Bed, on_delete=models.SET_NULL, null=True)
+    bed = models.ForeignKey(Bed, on_delete=models.SET_NULL, null=True, related_name='admissions')
     attending_doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True)
     admission_date = models.DateTimeField(auto_now_add=True)
     diagnosis = models.TextField()
     is_discharged = models.BooleanField(default=False)
     discharge_date = models.DateTimeField(null=True, blank=True)
-    def __str__(self): return f"{self.admission_id} - {self.patient.name}"
+
+    def __str__(self): 
+        return f"{self.admission_id} - {self.patient.name}"
 
 class IPD_DailyRecord(models.Model):
     admission = models.ForeignKey(IPD_Admission, on_delete=models.CASCADE, related_name='daily_records')
     date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True, verbose_name="Record Time")
+    patient_reg_id = models.CharField(max_length=50, blank=True, null=True, help_text="Auto-saved Registration ID")
     saline_details = models.TextField(blank=True)
     injection_details = models.TextField(blank=True)
     other_notes = models.TextField(blank=True)
     vitals = models.CharField(max_length=100) 
-    def __str__(self): return f"Record for {self.admission.patient.name} on {self.date}"
 
+    def save(self, *args, **kwargs):
+        if not self.patient_reg_id and self.admission:
+            self.patient_reg_id = self.admission.patient.reg_number
+        super().save(*args, **kwargs)
+
+    def __str__(self): 
+        return f"Record: {self.patient_reg_id} on {self.date} at {self.time}"
 class OT_Management(models.Model):
     SURGERY_STATUS = [('Scheduled', 'Scheduled'), ('In Progress', 'In Progress'), ('Completed', 'Completed')]
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
@@ -160,32 +170,38 @@ class VisitorCount(models.Model):
 class DischargeSummary(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     
-    # 🟢 Naye Fields (Jo aapne mange)
-    patient_name_snapshot = models.CharField(max_length=150, blank=True, help_text="Auto-saved from Patient Profile")
-    reg_id_snapshot = models.CharField(max_length=50, blank=True, help_text="Auto-saved Registration ID")
+    # Snapshot fields
+    patient_name_snapshot = models.CharField(max_length=150, blank=True)
+    reg_id_snapshot = models.CharField(max_length=50, blank=True)
 
     doctor_name = models.CharField(max_length=100) 
     date_of_admission = models.DateTimeField()
     date_of_discharge = models.DateTimeField(auto_now_add=True)
     
-    # --- Pehle ke Fields ---
+    # Lab & Vitals
     hb = models.CharField(max_length=50, blank=True, verbose_name="Hemoglobin")
     tlc = models.CharField(max_length=50, blank=True, verbose_name="Total Leucocyte Count")
     platelets = models.CharField(max_length=50, blank=True)
     bul = models.CharField(max_length=50, blank=True, verbose_name="Blood Urea Level")
     creatinine = models.CharField(max_length=50, blank=True)
-    
-    # --- Naye Investigation Fields ---
     lft = models.CharField(max_length=100, blank=True, verbose_name="LFT (TB/DB/IB)")
     xray = models.TextField(blank=True, verbose_name="X-Ray Findings")
     ct_scan = models.TextField(blank=True, verbose_name="CT Scan Findings")
     mri = models.TextField(blank=True, verbose_name="MRI Findings")
+    
+    # Clinical Notes
     presenting_complaints = models.TextField(blank=True)
     final_diagnosis = models.TextField(blank=True)
     condition_on_admission = models.TextField(blank=True)
     condition_on_discharge = models.TextField(blank=True)
-    treatment_given = models.TextField(help_text="In-hospital treatment details")
-    treatment_advised = models.TextField(help_text="Medications for home with directions")
+    
+    # 🟢 Updated: These will store JSON strings (List of medicines)
+    treatment_given = models.TextField(help_text="JSON Data: In-hospital meds", default="[]")
+    treatment_advised = models.TextField(help_text="JSON Data: Home Rx", default="[]")
+    
+    # 🟢 New Field
+    discharge_advice = models.TextField(blank=True, help_text="General advice/diet/rest", verbose_name="Discharge Advice")
+    
     follow_up = models.CharField(max_length=200, blank=True)
 
     def save(self, *args, **kwargs):
@@ -195,7 +211,7 @@ class DischargeSummary(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self): 
-        return f"Discharge: {self.patient_name_snapshot} ({self.reg_id_snapshot})"
+        return f"Discharge: {self.patient_name_snapshot}"
 
     # Operation Management
 
